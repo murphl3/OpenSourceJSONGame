@@ -1,1 +1,1 @@
-# OpenSourceJSONGame
+# OpenSourceJavascriptGame
