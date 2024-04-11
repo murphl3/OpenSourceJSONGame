@@ -1,8 +1,8 @@
 // SETUP
 const canvas = document.getElementById("gameCanvas");
 const context = canvas.getContext("2d");
-canvas.width = 1500;
-canvas.height = 900;
+canvas.width = 768;
+canvas.height = 768;
 function clearCanvas() {
 	var prevStyle = context.fillStyle;
 	context.fillStyle = "#000000";
@@ -44,123 +44,155 @@ window.addEventListener('keyup', (event) => {
 /********************************************************************************************************************************/
 
 // CLASSES
+class Point {
+	// A basic class to represent cartesian coordinates
+	constructor(x, y) {
+		if (typeof(x) !== Number || typeof(y) !== Number) { throw new Error("Invalid Point"); }
+		this.x = x;
+		this.y = y;
+	}
+	// Returns a polar form equivalent to to this point
+	toVector() {
+		return new Vector(Math.sqrt(Math.pow(this.y, 2) + Math.pow(this.x, 2)), Math.atan2(this.y, this.x));
+	}
+	// Returns a point with a reversed direction but equivalent magnitude
+	invert() {
+		return new Point(-1 * this.x, -1 * this.y);
+	}
+	// Returns a point with a magnitude of 1
+	normalize() {
+		let factor = this.toVector().magnitude;
+		return new Point(this.x / factor, this.y / factor);
+	}
+	// Finds the distance between this point and another
+	getDistance(other) {
+		if (!(other instanceof Point)) { throw new Error("getDistance must be between two points."); }
+		return Math.sqrt(Math.pow(other.y - this.y, 2) + Math.pow(other.x - this.x, 2));
+	}
+	// Finds the direction to another point from this one
+	getDirection(other) {
+		if (!(other instanceof Point)) { throw new Error("getDirection must be between two points."); }
+		return Math.atan2(other.y - this.y, other.x - this.x);
+	}
+};
+
+class Vector {
+	// A basic class to represent polar coordinates
+	constructor(mag, dir) {
+		if (typeof(mag) !== Number || typeof(dir) !== Number) { throw new Error("Invalid Vector"); }
+		this.magnitude = mag;
+		this.direction = dir % (2 * Math.PI);
+	}
+	// Returns a component form equivalent of this vector
+	toPoint() {
+		return new Point(this.magnitude * Math.cos(this.direction), this.magnitude * Math.sin(this.direction));
+	}
+	// Returns a vector with a reversed direction
+	invert() {
+		return new Vector(this.magnitude, this.direction + Math.PI);
+	}
+	// Returns a vector with a magnitude of 1
+	normalize() {
+		return new Vector(1, this.direction);
+	}
+	// Gets the x component  of the vector
+	getX() {
+		return this.magnitude * Math.cos(this.direction);
+	}
+	// Gets the y component of the vector
+	getY() {
+		return this.magnitude * Math.sin(this.direction);
+	}
+};
+
+class Triangle {
+	// A triangle made of points, with some extra functionality
+	constructor(point1, point2, point3) {
+		if (!(point1 instanceof Point) || !(point2 instanceof Point) || !(point3 instanceof Point)) { throw new Error("Invalid Points"); }
+		this.points = [point1, point2, point3];
+		this.normals = this.getNormals();
+	}
+	getNormals() {
+		// Find the center to check normals later
+		let center = new Point(((this.points[0].x + this.points[1].x + this.points[2].x) / 3), ((this.points[0].y + this.points[1].y + this.points[2].y) / 3));
+		// Initialize a normal Array
+		var normals = new Array(3);
+		// Loop through the points
+		for (let i = 0; i < 3; i++) {
+			// Find the normal value for each pair of points
+			normals[i] = new Vector(1, new Point(this.points[(i + 1) % 3].x - this.points[i].x, this.points[(i + 1) % 3].y - this.points[i].y).getDirection() + (Math.PI / 2));
+			// Calculate the inverse to check if the normal is the correct one
+			let inverse = normals[i].invert();
+			// Actually check the normal
+			if (new Point(center.x + normals[i].getX(), center.y + normals[i].getY()).getDistance(center) < new Point(center.x + inverse.getX(), center.y + inverse.getY())) {
+				// Replace the current normal with the inverse one if it is found to be incorrect
+				normals[i] = inverse;
+			}
+		}
+		// Return the found normals
+		return normals;
+	}
+};
+
+class Hitbox {
+	// A list of triangles representing a hitbox, with some other functionality
+	constructor(...points) {
+		for (let i = 0; i < points.length; i++) {
+			if (!(points[i] instanceof Point)) { throw new Error("Hitbox can only be made with points."); }
+		}
+		this.triangles = this.pointsToTriangles(points);
+	}
+	pointsToTriangles(...points) {
+		// Check that we have enough points
+		if (points.length < 3) { throw new Error ("Insufficient Points"); }
+		var active = new Array(points.length);
+		for (let i = 0; i < points.length; i++) {
+			active[i] = points[i];
+		}
+		var triangles = new Array();
+		var current = 0;
+		/*
+
+		IMPLEMENT TRIANGULATION HERE
+
+		*/
+		active.splice(current, 1);
+	}
+};
+
 class Entity {
-	// A top-level class which stores anything not related to level maps
-	constructor({id}) { this.id = id; };
-}
-
-class Agent extends Entity {
-	// An Entity which has dynamic AI behavior (Player, Mobs, Enemy...)
-	constructor({id, position, dimensions, velocity}) {
-		super(id);
+	// A top-level class which is a superclass of almost everything in the game
+	constructor({id, position, orientation, scale, hitbox, sprite}) {
+		// The unique ID of a given entity
+		this.id = id;
+		// The position of the entity in the world (should be undefined if entity is not present in the world, i.e. in inventory)
 		this.position = position;
-		this.dimensions = dimensions;
-		this.velocity = velocity;
+		// The direction the entity, in radians (0 = facing right)
+		this.orientation = orientation;
+		this.scale = scale;
+		// The hitbox which is used to calculate collision when the position is not undefined (can also be undefined if the entity will never be present in the world or never collided with)
+		this.hitbox = hitbox;
+		// This is what is drawn when an entity is in the world
+		this.sprite = sprite;
 	}
-	update({canvas, context}) { return new Error("Incomplete"); }
-	draw({context}) { return new Error("Incomplete"); }
-}
+	// Checks collision
+	collidingWith(other) {
+		// Error detection
+		if (!(other instanceof Entity)) { throw new Error(other + " is not an Entity"); }
+		// Base cases where either this or the other entity are not present in the world/collidable
+		if (this.position === undefined || other.position === undefined || this.hitbox === undefined || other.hitbox === undefined) {return false}
+		/*
 
-class Player extends Agent {
-	// The Agent the player is in control of
-	constructor({position, dimensions, velocity}) { super({id: "playerId", position, dimensions, velocity}); }
-	update({keyState, canvas, context}) {
-		var up = (keyState["w"] || keyState ["W"] || keyState["ArrowUp"]);
-		var down = (keyState["s"] || keyState ["S"] || keyState["ArrowDown"]);
-		var left = (keyState["a"] || keyState ["A"] || keyState["ArrowLeft"]);
-		var right = (keyState["d"] || keyState ["D"] || keyState["ArrowRight"]);
-		if (up && down) {
-			up = false;
-			down = false;
-		}
-		if (left && right) {
-			left = false;
-			right = false;
-		}
-		if (up) {
-			if (right) {
-				this.velocity.x = 2.121;
-				this.velocity.y = -2.121;
-			} else if (left) {
-				this.velocity.x = -2.121;
-				this.velocity.y = -2.121;
-			} else {
-				this.velocity.x = 0;
-				this.velocity.y = -3;
-			}
-		} else if (down) {
-			if (right) {
-				this.velocity.x = 2.121;
-				this.velocity.y = 2.121;
-			} else if (left) {
-				this.velocity.x = -2.121;
-				this.velocity.y = 2.121;
-			} else {
-				this.velocity.x = 0;
-				this.velocity.y = 3;
-			}
-		} else if (left) {
-			this.velocity.x = -3;
-			this.velocity.y = 0;
-		} else if (right) {
-			this.velocity.x = 3;
-			this.velocity.y = 0;
-		} else {
-			this.velocity.x = 0;
-			this.velocity.y = 0;
-		}
-		this.position.x += this.velocity.x;
-		this.position.y += this.velocity.y;
-		if (this.position.x > canvas.width) {
-			this.position.x = -1 * this.dimensions.width;
-		} else if (this.position.x < -1 * this.dimensions.width) {
-			this.position.x = canvas.width;
-		}
-		if (this.position.y > canvas.height) {
-			this.position.y = -1 * this.dimensions.height;
-		} else if (this.position.y < -1 * this.dimensions.height) {
-			this.position.y = canvas.height;
-		}
-		this.draw({context});
+		IMPLEMET SEPARATING AXIS THEOREM COLLISION HERE ON EACH TRIANGLE IN THE HITBOX
+
+		*/
 	}
-	draw({context}) {
-		var prevStyle = context.fillStyle;
-		context.fillStyle = "#FF0000";
-		context.fillRect(this.position.x, this.position.y, this.dimensions.width, this.dimensions.height);
-		context.fillStyle = prevStyle;
-	}
-}
-
-class NPC extends Agent {
-	// A non-player Agent
-	constructor({id, position, dimensions, velocity}) { super({id, position, dimensions, velocity}); }
-}
-
-class Enemy extends NPC {
-	// A hostile NPC
-	constructor({id, position, dimensions, velocity}) { super({id, position, dimensions, velocity}); }
-}
-
-class Interactable extends Entity {
-	// An Entity an Agent can interact with
-	constructor({id}) { super({id}); }
-}
-
-class Item extends Interactable {
-	// An Interactable which can be picked up by an Agent
-	constructor({id}) { super({id}); }
-}
-
-class Equipable extends Interactable {
-	// An item an Agent can equip
-	constructor({id}) { super({id}); }
-	equip() { return new Error("Incomplete"); }
-}
+};
 
 /********************************************************************************************************************************/
 
 // Initialize game content
-var agents = [];
+var agents = new Array();
 agents.push(new Player({position: {x: 0, y: 0}, dimensions: {width: 50, height: 50}, velocity: {x: 0, y: 10}}));
 
 /********************************************************************************************************************************/
