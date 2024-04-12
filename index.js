@@ -4,10 +4,11 @@ const context = canvas.getContext("2d");
 canvas.width = 768;
 canvas.height = 768;
 function clearCanvas() {
-	var prevStyle = context.fillStyle;
+	var prevStyle = [context.fillStyle, context.strokeStyle];
 	context.fillStyle = "#000000";
 	context.fillRect(0, 0, canvas.width, canvas.height);
-	context.fillStyle = prevStyle;
+	context.fillStyle = prevStyle[0];
+	context.strokeStyle = prevStyle[1];
 }
 clearCanvas();
 
@@ -28,7 +29,8 @@ const initializedKeys = [
 	"ArrowLeft",
 	"d",
 	"D",
-	"ArrowRight"
+	"ArrowRight",
+	" ",
 ];
 var keyState = new Object();
 for (var i = 0; i < initializedKeys.length; i++) {
@@ -47,7 +49,13 @@ window.addEventListener('keyup', (event) => {
 class Point {
 	// A basic class to represent cartesian coordinates
 	constructor(x, y) {
-		if (typeof(x) !== Number || typeof(y) !== Number) { throw new Error("Invalid Point"); }
+		if (typeof(x) !== typeof(0) || typeof(y) !== typeof(0)) { throw new Error("Invalid Point"); }
+		this.x = x;
+		this.y = y;
+	}
+	// Set the point value
+	set(x, y) {
+		if (typeof(x) !== typeof(0) || typeof(y) !== typeof(0)) { throw new Error("Invalid Point"); }
 		this.x = x;
 		this.y = y;
 	}
@@ -79,7 +87,13 @@ class Point {
 class Vector {
 	// A basic class to represent polar coordinates
 	constructor(mag, dir) {
-		if (typeof(mag) !== Number || typeof(dir) !== Number) { throw new Error("Invalid Vector"); }
+		if (typeof(mag) !== typeof(0) || typeof(dir) !== typeof(0)) { throw new Error("Invalid Vector"); }
+		this.magnitude = mag;
+		this.direction = dir % (2 * Math.PI);
+	}
+	// Set the vector value
+	set(mag, dir) {
+		if (typeof(mag) !== typeof(0) || typeof(dir) !== typeof(0)) { throw new Error("Invalid Vector"); }
 		this.magnitude = mag;
 		this.direction = dir % (2 * Math.PI);
 	}
@@ -140,20 +154,24 @@ class Hitbox {
 		for (let i = 0; i < points.length; i++) {
 			if (!(points[i] instanceof Point)) { throw new Error("Hitbox can only be made with points."); }
 		}
+		this.points = new Array(points.length);
+		for (let i = 0; i < points.length; i++) {
+			this.points[i] = points[i];
+		}
 		this.triangles = this.pointsToTriangles(points);
 	}
-	pointsToTriangles(...points) {
+	pointsToTriangles() {
 		// Check that we have enough points
-		if (points.length < 3) { throw new Error ("Insufficient Points"); }
-		var active = new Array(points.length);
-		for (let i = 0; i < points.length; i++) {
-			active[i] = points[i];
+		if (this.points.length < 3) { throw new Error ("Insufficient Points"); }
+		var active = new Array(this.points.length);
+		for (let i = 0; i < this.points.length; i++) {
+			active[i] = this.points[i];
 		}
 		var triangles = new Array();
 		var current = 0;
 		/*
 
-		IMPLEMENT TRIANGULATION HERE
+		TODO IMPLEMENT TRIANGULATION HERE
 
 		*/
 		active.splice(current, 1);
@@ -169,11 +187,14 @@ class Entity {
 		this.position = position;
 		// The direction the entity, in radians (0 = facing right)
 		this.orientation = orientation;
+		// The scale of the entity
 		this.scale = scale;
 		// The hitbox which is used to calculate collision when the position is not undefined (can also be undefined if the entity will never be present in the world or never collided with)
 		this.hitbox = hitbox;
 		// This is what is drawn when an entity is in the world
 		this.sprite = sprite;
+		// Log the entity for debugging
+		console.log(this);
 	}
 	// Checks collision
 	collidingWith(other) {
@@ -183,25 +204,148 @@ class Entity {
 		if (this.position === undefined || other.position === undefined || this.hitbox === undefined || other.hitbox === undefined) {return false}
 		/*
 
-		IMPLEMET SEPARATING AXIS THEOREM COLLISION HERE ON EACH TRIANGLE IN THE HITBOX
+		TODO IMPLEMENT SEPARATING AXIS THEOREM COLLISION HERE ON EACH TRIANGLE IN THE HITBOX
 
 		*/
 	}
+	// Draw the Entity
+	draw(context) {
+		if (this.position === undefined) { return; }
+		context.drawImage(this.sprite.getImage(), this.position.x, this.position.y)
+		/*
+
+		TODO ADD A SPRITE CLASS AND ADJUST IMAGE FOR ORIENTATION (SPRITE CLASS ALLOWS FOR ANIMATION)
+
+		*/
+	}
+	// Draw the hitbox of the entity
+	drawHitbox(context) {
+		var prevStyle = [context.fillStyle, context.strokeStyle, context.lineWidth];
+		context.strokeStyle = "#FF0000";
+		context.lineWidth = 2;
+		for (let i = 0; i < this.hitbox.points.length; i++) {
+			context.beginPath();
+			context.moveTo(this.hitbox.points[i].x + this.position.x, this.hitbox.points[i].y + this.position.y);
+			context.lineTo(this.hitbox.points[(i + 1) % this.hitbox.points.length].x + this.position.x, this.hitbox.points[(i + 1) % this.hitbox.points.length].y + this.position.y);
+			context.stroke();
+		}
+		context.fillStyle = prevStyle[0];
+		context.strokeStyle = prevStyle[1];
+		context.lineWidth = prevStyle[2];
+	}
+	// Update the entity according to a set of rules
+	update({canvas, context}) {
+		this.drawHitbox(context);
+	}
+};
+
+class Player extends Entity {
+	constructor(args) {
+		super(args);
+		this.velocity = new Point(0, 0);
+		this.cooldown = 0;
+		this.projectile = -1;
+	}
+	update({keyState, canvas, context, entities}) {
+		var up = (keyState["w"] || keyState ["W"] || keyState["ArrowUp"]);
+		var down = (keyState["s"] || keyState ["S"] || keyState["ArrowDown"]);
+		var left = (keyState["a"] || keyState ["A"] || keyState["ArrowLeft"]);
+		var right = (keyState["d"] || keyState ["D"] || keyState["ArrowRight"]);
+		if (up && down) {
+			up = false;
+			down = false;
+		}
+		if (left && right) {
+			left = false;
+			right = false;
+		}
+		if (up) {
+			if (right) {
+				this.velocity.x = 2.121;
+				this.velocity.y = -2.121;
+			} else if (left) {
+				this.velocity.x = -2.121;
+				this.velocity.y = -2.121;
+			} else {
+				this.velocity.x = 0;
+				this.velocity.y = -3;
+			}
+		} else if (down) {
+			if (right) {
+				this.velocity.x = 2.121;
+				this.velocity.y = 2.121;
+			} else if (left) {
+				this.velocity.x = -2.121;
+				this.velocity.y = 2.121;
+			} else {
+				this.velocity.x = 0;
+				this.velocity.y = 3;
+			}
+		} else if (left) {
+			this.velocity.x = -3;
+			this.velocity.y = 0;
+		} else if (right) {
+			this.velocity.x = 3;
+			this.velocity.y = 0;
+		} else {
+			this.velocity.x = 0;
+			this.velocity.y = 0;
+		}
+		if (keyState[" "] && this.cooldown === 0) {
+		    this.cooldown = 64
+            entities.push(new Projectile({id: "projectile", position: new Point(this.position.x, this.position.y), orientation: this.orientation, scale: this.scale}))
+            this.projectile = entities.length - 1;
+		}
+		if (this.cooldown > 0) {
+		    this.cooldown--;
+		}
+		if (this.cooldown === 0 && this.projectile !== -1) {
+		    entities.splice(this.projectile, 1);
+		    this.projectile = -1;
+		}
+		this.position.set(this.position.x + this.velocity.x, this.position.y + this.velocity.y);
+		this.orientation = this.position.getDirection(mousePos);
+		this.drawHitbox(context);
+
+		var prevStyle = [context.fillStyle, context.strokeStyle, context.lineWidth];
+        context.strokeStyle = "#00FF00";
+        context.lineWidth = 2;
+        context.arc(this.position.x, this.position.y, 64 * 5 * this.scale, 0, 2 * Math.PI);
+        context.fillStyle = prevStyle[0];
+        context.strokeStyle = prevStyle[1];
+        context.lineWidth = prevStyle[2];
+	}
+};
+
+class Projectile extends Entity {
+    constructor(args) {
+        args.hitbox = new Hitbox(new Point(-5, 0), new Point(0, 5), new Point(5, 0), new Point(0, -5));
+        super(args);
+    }
+    update({canvas, context}) {
+        let new_position = new Vector(1, this.orientation).toPoint();
+        this.position.set(this.position.x + (new_position.x * 5 * this.scale), this.position.y + (new_position.y * 5 * this.scale));
+        this.drawHitbox(context);
+    }
 };
 
 /********************************************************************************************************************************/
 
 // Initialize game content
-var agents = new Array();
-agents.push(new Player({position: {x: 0, y: 0}, dimensions: {width: 50, height: 50}, velocity: {x: 0, y: 10}}));
+var entities = new Array();
+entities.push(new Player({id: "Player", position: new Point(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Hitbox(new Point(-25, -25), new Point(25, -25), new Point(25, 25), new Point(-25, 25))}));
+var mousePos = new Point(0, 0);
+canvas.addEventListener('mousemove', (event) => {
+    mousePos.set(event.clientX, event.clientY);
+});
 
 /********************************************************************************************************************************/
 
 // GAME LOGIC
 function loop() {
 	clearCanvas();
-	for (var i = 0; i < agents.length; i++) {
-		agents[i].update({keyState: keyState, canvas: canvas, context: context});
+	for (var i = 0; i < entities.length; i++) {
+		entities[i].update({keyState: keyState, canvas: canvas, context: context, entities: entities});
 	}
 	window.requestAnimationFrame(loop);
 }
