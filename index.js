@@ -46,137 +46,193 @@ window.addEventListener('keyup', (event) => {
 /********************************************************************************************************************************/
 
 // CLASSES
-class Point {
-	// A basic class to represent cartesian coordinates
+class Vector extends Hitbox {
+	getX() { throw new Error("Class Method \"getX\" Not Implemented") }
+	getY() { throw new Error("Class Method \"getY\" Not Implemented") }
+	getMagnitude() { throw new Error("Class Method \"getMagnitude\" Not Implemented") }
+	getAngle() { throw new Error("Class Method \"getAngle\" Not Implemented") }
+	toPolarPoint() { throw new Error("Class Method \"toPolarPoint\" Not Implemented") }
+	toCartesianPoint() { throw new Error("Class Method \"toCartesianPoint\" Not Implemented") }
+	invert() { throw new Error("Class Method \"invert\" Not Implemented") }
+	normalize() { throw new Error("Class Method \"normalize\" Not Implemented") }
+	add(other) { throw new Error("Class Method \"add\" Not Implemented") }
+	subtract(other) { throw new Error("Class Method \"subtract\" Not Implemented") }
+}
+
+class CartesianPoint extends Vector {
+	// A cartesian coordinate representing a vector
 	constructor(x, y) {
-		if (typeof(x) !== typeof(0) || typeof(y) !== typeof(0)) { throw new Error("Invalid Point"); }
-		this.x = x;
-		this.y = y;
-	}
-	// Set the point value
-	set(x, y) {
-		if (typeof(x) !== typeof(0) || typeof(y) !== typeof(0)) { throw new Error("Invalid Point"); }
-		this.x = x;
-		this.y = y;
-	}
-	// Returns a polar form equivalent to to this point
-	toVector() {
-		return new Vector(Math.sqrt(Math.pow(this.y, 2) + Math.pow(this.x, 2)), Math.atan2(this.y, this.x));
-	}
-	// Returns a point with a reversed direction but equivalent magnitude
-	invert() {
-		return new Point(-1 * this.x, -1 * this.y);
-	}
-	// Returns a point with a magnitude of 1
-	normalize() {
-		let factor = this.toVector().magnitude;
-		return new Point(this.x / factor, this.y / factor);
-	}
-	// Finds the distance between this point and another
-	getDistance(other) {
-		if (!(other instanceof Point)) { throw new Error("getDistance must be between two points."); }
-		return Math.sqrt(Math.pow(other.y - this.y, 2) + Math.pow(other.x - this.x, 2));
-	}
-	// Finds the direction to another point from this one
-	getDirection(other) {
-		if (!(other instanceof Point)) { throw new Error("getDirection must be between two points."); }
-		return Math.atan2(other.y - this.y, other.x - this.x);
-	}
-};
-
-class Vector {
-	// A basic class to represent polar coordinates
-	constructor(mag, dir) {
-		if (typeof(mag) !== typeof(0) || typeof(dir) !== typeof(0)) { throw new Error("Invalid Vector"); }
-		this.magnitude = mag;
-		this.direction = dir % (2 * Math.PI);
-	}
-	// Set the vector value
-	set(mag, dir) {
-		if (typeof(mag) !== typeof(0) || typeof(dir) !== typeof(0)) { throw new Error("Invalid Vector"); }
-		this.magnitude = mag;
-		this.direction = dir % (2 * Math.PI);
-	}
-	// Returns a component form equivalent of this vector
-	toPoint() {
-		return new Point(this.magnitude * Math.cos(this.direction), this.magnitude * Math.sin(this.direction));
-	}
-	// Returns a vector with a reversed direction
-	invert() {
-		return new Vector(this.magnitude, this.direction + Math.PI);
-	}
-	// Returns a vector with a magnitude of 1
-	normalize() {
-		return new Vector(1, this.direction);
-	}
-	// Gets the x component  of the vector
-	getX() {
-		return this.magnitude * Math.cos(this.direction);
-	}
-	// Gets the y component of the vector
-	getY() {
-		return this.magnitude * Math.sin(this.direction);
-	}
-};
-
-class Triangle {
-	// A triangle made of points, with some extra functionality
-	constructor(point1, point2, point3) {
-		if (!(point1 instanceof Point) || !(point2 instanceof Point) || !(point3 instanceof Point)) { throw new Error("Invalid Points"); }
-		this.points = [point1, point2, point3];
-		this.normals = this.getNormals();
-	}
-	getNormals() {
-		// Find the center to check normals later
-		let center = new Point(((this.points[0].x + this.points[1].x + this.points[2].x) / 3), ((this.points[0].y + this.points[1].y + this.points[2].y) / 3));
-		// Initialize a normal Array
-		var normals = new Array(3);
-		// Loop through the points
-		for (let i = 0; i < 3; i++) {
-			// Find the normal value for each pair of points
-			normals[i] = new Vector(1, new Point(this.points[(i + 1) % 3].x - this.points[i].x, this.points[(i + 1) % 3].y - this.points[i].y).getDirection() + (Math.PI / 2));
-			// Calculate the inverse to check if the normal is the correct one
-			let inverse = normals[i].invert();
-			// Actually check the normal
-			if (new Point(center.x + normals[i].getX(), center.y + normals[i].getY()).getDistance(center) < new Point(center.x + inverse.getX(), center.y + inverse.getY())) {
-				// Replace the current normal with the inverse one if it is found to be incorrect
-				normals[i] = inverse;
-			}
+		if (typeof(x) !== "number" || typeof(y) !== "number" || isNaN(x) || !isFinite(x) || isNaN(y) || !isFinite(y)) {
+			throw new Error("Invalid Cartesian Coordinate: (" + x + ", " + y + ")")
 		}
-		// Return the found normals
-		return normals;
+		this.x = x
+		this.y = y
 	}
-};
+	getX() {
+		return this.x
+	}
+	getY() {
+		return this.y
+	}
+	getMagnitude() {
+		return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+	}
+	getAngle() {
+		return Math.atan2(this.y, this.x)
+	}
+	toPolarPoint() {
+		return new PolarPoint(this.getMagnitude(), this.getAngle())
+	}
+	toCartesianPoint() {
+		return new CartesianPoint(this.x, this.y)
+	}
+	invert() {
+		return new CartesianPoint(-1 * this.x, -1 * this.y)
+	}
+	normalize() {
+		let magnitude = this.getMagnitude()
+		if (magnitude < 1) {
+			return this.toCartesianPoint()
+		}
+		return new CartesianPoint(this.x / magnitude, this.y / magnitude)
+	}
+	add(other) {
+		if (!(other instanceof Vector)) { throw new Error("\"add\" only accepts Vectors") }
+		return new CartesianPoint(this.x + other.getX(), this.y + other.getY())
+	}
+	subtract(other) {
+		if (!(other instanceof Vector)) { throw new Error("\"subtract\" only accepts Vectors") }
+		return new CartesianPoint(this.x - other.getX(), this.y - other.getY())
+	}
+}
+
+class PolarPoint extends Vector {
+	// A polar coordinate representing a vector with an angle betwwn 0 and 2pi, corrected so the magnitude is always positive
+	constructor(magnitude, angle) {
+		if (typeof(magnitude) !== "number" || typeof(angle) !== "number" || isNaN(magnitude) || !isFinite(magnitude) || isNaN(angle) || !isFinite(angle)) {
+			throw new Error("Invalid Polar Coordinate: (" + magnitude + ", " + angle + ")")
+		}
+		this.magnitude = magnitude
+		this.angle = angle
+		if (this.magnitude < 0) {
+			this.magnitude *= -1
+			this.angle += (2 * Math.PI)
+		}
+		this.angle = this.angle % (2 * Math.PI)
+	}
+	getX() {
+		return this.magnitude * Math.cos(this.angle)
+	}
+	getY() {
+		return this.magnitude * Math.sin(this.angle)
+	}
+	getMagnitude() {
+		return this.magnitude
+	}
+	getAngle() {
+		return this.angle
+	}
+	toPolarPoint() {
+		return new PolarPoint(this.magnitude, this.angle)
+	}
+	toCartesianPoint() {
+		return new CartesianPoint(this.getX(), this.getY())
+	}
+	invert() {
+		return new PolarPoint(this.magnitude, this.angle + Math.PI)
+	}
+	normalize() {
+		if (this.magnitude < 1) {
+			return new PolarPoint(this.magnitude, this.angle)
+		}
+		return new PolarPoint(1, this.angle)
+	}
+	add(other) {
+		if (!(other instanceof Vector)) { throw new Error("\"add\" only accepts Vectors") }
+		return new CartesianPoint(this.getX() + other.getX(), this.getY() + other.getY()).toPolarPoint();
+	}
+	subtract(other) {
+		if (!(other instanceof Vector)) { throw new Error("\"subtract\" only accepts Vectors") }
+		return new CartesianPoint(this.getX() - other.getX(), this.getY() - other.getY()).toPolarPoint();
+	}
+}
 
 class Hitbox {
-	// A list of triangles representing a hitbox, with some other functionality
-	constructor(...points) {
-		for (let i = 0; i < points.length; i++) {
-			if (!(points[i] instanceof Point)) { throw new Error("Hitbox can only be made with points."); }
-		}
-		this.points = new Array(points.length);
-		for (let i = 0; i < points.length; i++) {
-			this.points[i] = points[i];
-		}
-		this.triangles = this.pointsToTriangles(points);
-	}
-	pointsToTriangles() {
-		// Check that we have enough points
-		if (this.points.length < 3) { throw new Error ("Insufficient Points"); }
-		var active = new Array(this.points.length);
-		for (let i = 0; i < this.points.length; i++) {
-			active[i] = this.points[i];
-		}
-		var triangles = new Array();
-		var current = 0;
-		/*
+	accept(visitor) { throw new Error("Class Method \"accept\" Not Implemented") }
+}
 
-		TODO IMPLEMENT TRIANGULATION HERE
-
-		*/
-		active.splice(current, 1);
+class Rect extends Hitbox {
+	constructor(width, height) {
+		if (typeof(width) !== "number" || typeof(height) !== "number" || width < 0 || height < 0) { throw new Error("Invalid Width/Height Pair: (" + width + ", " + height + ")") }
+		this.width = width;
+		this.height = height;
 	}
-};
+	accept(visitor) { return visitor.onRect(this) }
+}
+
+class Circle extends Hitbox {
+	constructor(radius) {
+		if (typeof(radius) !== "number" || radius <= 0) { throw new Error("Invalid Radius: " + radius) }
+		this.radius = radius
+	}
+	accept(visitor) { return visitor.onCircle(this) }
+}
+
+class Location extends Hitbox {
+	constructor(x, y, hitbox) {
+		if (!(hitbox instanceof Hitbox)) { throw new Error("Location only applies to Hitboxes") }
+		this.position = new CartesianPoint(x, y)
+		this.hitbox = hitbox
+	}
+	accept(visitor) { return visitor.onLocation(this) }
+}
+
+class Group extends Hitbox {
+	constructor(...hitboxes) {
+		if (hitboxes.some((hitbox) => !(hitbox instanceof Hitbox))) { throw new Error("Group may only contain Hitboxes") }
+		this.hitboxes = [...hitboxes]
+	}
+	accept(visitor) { return visitor.onGroup(this) }
+}
+
+class Visitor {
+	onRect(rect) { throw new Error("Class Method \"onRect\" Not Implemented") }
+	onCircle(circle) { throw new Error("Class Method \"onCircle\" Not Implemented") }
+	onLocation(location) { throw new Error("Class Method \"onLocation\" Not Implemented") }
+	onGroup(group) { throw new Error("Class Method \"onGroup\" Not Implemented") }
+}
+
+class DrawHitboxes extends Visitor {
+	constructor(context) {
+		this.context = context
+		this.position = new CartesianPoint(0, 0)
+	}
+	onRect(rect) {
+		var prevStyle = [this.context.fillStyle, this.context.strokeStyle]
+		this.context.fillStyle = "#FF0000"
+		this.context.fillRect(this.position.getX(), this.position.getY(), rect.width, rect.height)
+		this.context.fillStyle = prevStyle[0]
+		this.context.strokeStyle = prevStyle[1]
+	}
+	onCircle(circle) {
+		var prevStyle = [this.context.fillStyle, this.context.strokeStyle];
+		this.context.fillStyle = "#FF0000"
+		this.context.beginPath()
+		this.context.arc (this.position.getX(), this.position.getY(), circle.radius, 0, 2 * Math.PI)
+		this.context.fill()
+		this.context.fillStyle = prevStyle[0]
+		this.context.strokeStyle = prevStyle[1]
+	}
+	onLocation(location) {
+		let prevPosition = this.position
+		this.position = location.position
+		location.hitbox.accept(this)
+		this.position = prevPosition
+	}
+	onGroup(group) {
+		group.hitboxes.forEach(hitbox => hitbox.accept(this))
+	}
+}
 
 class Entity {
 	// A top-level class which is a superclass of almost everything in the game
@@ -202,11 +258,7 @@ class Entity {
 		if (!(other instanceof Entity)) { throw new Error(other + " is not an Entity"); }
 		// Base cases where either this or the other entity are not present in the world/collidable
 		if (this.position === undefined || other.position === undefined || this.hitbox === undefined || other.hitbox === undefined) {return false}
-		/*
-
-		TODO IMPLEMENT SEPARATING AXIS THEOREM COLLISION HERE ON EACH TRIANGLE IN THE HITBOX
-
-		*/
+		// TODO: IMPLEMENT COLLISION
 	}
 	// Draw the Entity
 	draw(context) {
@@ -326,7 +378,7 @@ class Projectile extends Entity {
         let new_position = new Vector(1, this.orientation).toPoint();
         this.position.set(this.position.x + (new_position.x * 5 * this.scale), this.position.y + (new_position.y * 5 * this.scale));
         this.drawHitbox(context);
-    }
+	}
 };
 
 /********************************************************************************************************************************/
