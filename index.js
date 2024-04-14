@@ -46,7 +46,8 @@ window.addEventListener('keyup', (event) => {
 /********************************************************************************************************************************/
 
 // CLASSES
-class Vector extends Hitbox {
+class Vector {
+	constructor() {}
 	getX() { throw new Error("Class Method \"getX\" Not Implemented") }
 	getY() { throw new Error("Class Method \"getY\" Not Implemented") }
 	getMagnitude() { throw new Error("Class Method \"getMagnitude\" Not Implemented") }
@@ -65,6 +66,7 @@ class CartesianPoint extends Vector {
 		if (typeof(x) !== "number" || typeof(y) !== "number" || isNaN(x) || !isFinite(x) || isNaN(y) || !isFinite(y)) {
 			throw new Error("Invalid Cartesian Coordinate: (" + x + ", " + y + ")")
 		}
+		super()
 		this.x = x
 		this.y = y
 	}
@@ -112,6 +114,7 @@ class PolarPoint extends Vector {
 		if (typeof(magnitude) !== "number" || typeof(angle) !== "number" || isNaN(magnitude) || !isFinite(magnitude) || isNaN(angle) || !isFinite(angle)) {
 			throw new Error("Invalid Polar Coordinate: (" + magnitude + ", " + angle + ")")
 		}
+		super()
 		this.magnitude = magnitude
 		this.angle = angle
 		if (this.magnitude < 0) {
@@ -164,6 +167,7 @@ class Hitbox {
 class Rect extends Hitbox {
 	constructor(width, height) {
 		if (typeof(width) !== "number" || typeof(height) !== "number" || width < 0 || height < 0) { throw new Error("Invalid Width/Height Pair: (" + width + ", " + height + ")") }
+		super()
 		this.width = width;
 		this.height = height;
 	}
@@ -173,6 +177,7 @@ class Rect extends Hitbox {
 class Circle extends Hitbox {
 	constructor(radius) {
 		if (typeof(radius) !== "number" || radius <= 0) { throw new Error("Invalid Radius: " + radius) }
+		super()
 		this.radius = radius
 	}
 	accept(visitor) { return visitor.onCircle(this) }
@@ -181,6 +186,7 @@ class Circle extends Hitbox {
 class Location extends Hitbox {
 	constructor(x, y, hitbox) {
 		if (!(hitbox instanceof Hitbox)) { throw new Error("Location only applies to Hitboxes") }
+		super()
 		this.position = new CartesianPoint(x, y)
 		this.hitbox = hitbox
 	}
@@ -190,6 +196,7 @@ class Location extends Hitbox {
 class Group extends Hitbox {
 	constructor(...hitboxes) {
 		if (hitboxes.some((hitbox) => !(hitbox instanceof Hitbox))) { throw new Error("Group may only contain Hitboxes") }
+		super()
 		this.hitboxes = [...hitboxes]
 	}
 	accept(visitor) { return visitor.onGroup(this) }
@@ -204,6 +211,7 @@ class Visitor {
 
 class DrawHitboxes extends Visitor {
 	constructor(context) {
+		super()
 		this.color = "#FF0000"
 		this.context = context
 		this.position = new CartesianPoint(0, 0)
@@ -235,8 +243,9 @@ class DrawHitboxes extends Visitor {
 	}
 }
 
-class ListComponents {
+class ListComponents extends Visitor {
 	constructor() {
+		super()
 		this.stack = new Array()
 	}
 	onRect(rect) {
@@ -302,7 +311,7 @@ class Entity {
 	// Draw the hitbox of the entity
 	drawHitbox(context) {
 		let drawTool = new DrawHitboxes(context)
-		Location(this.position.getX(), this.position.getY(), this.hitbox).accept(drawTool)
+		new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(drawTool)
 	}
 	// Update the entity according to a set of rules
 	update({canvas, context}) {
@@ -313,78 +322,28 @@ class Entity {
 class Player extends Entity {
 	constructor(args) {
 		super(args);
-		this.velocity = new Point(0, 0);
+		this.speed = 3;
+		this.velocity = new PolarPoint(0, 0);
 		this.cooldown = 0;
 		this.projectile = -1;
 	}
-	update({keyState, canvas, context, entities}) {
-		var up = (keyState["w"] || keyState ["W"] || keyState["ArrowUp"]);
-		var down = (keyState["s"] || keyState ["S"] || keyState["ArrowDown"]);
-		var left = (keyState["a"] || keyState ["A"] || keyState["ArrowLeft"]);
-		var right = (keyState["d"] || keyState ["D"] || keyState["ArrowRight"]);
-		if (up && down) {
-			up = false;
-			down = false;
+	update({canvas, context, entities}) {
+		this.drawHitbox(context)
+		if (keyState["w"] || keyState ["W"] || keyState["ArrowUp"]) {
+			this.velocity = this.velocity.add(new CartesianPoint(0, -1))
 		}
-		if (left && right) {
-			left = false;
-			right = false;
+		if (keyState["s"] || keyState ["S"] || keyState["ArrowDown"]) {
+			this.velocity = this.velocity.add(new CartesianPoint(0, 1))
 		}
-		if (up) {
-			if (right) {
-				this.velocity.x = 2.121;
-				this.velocity.y = -2.121;
-			} else if (left) {
-				this.velocity.x = -2.121;
-				this.velocity.y = -2.121;
-			} else {
-				this.velocity.x = 0;
-				this.velocity.y = -3;
-			}
-		} else if (down) {
-			if (right) {
-				this.velocity.x = 2.121;
-				this.velocity.y = 2.121;
-			} else if (left) {
-				this.velocity.x = -2.121;
-				this.velocity.y = 2.121;
-			} else {
-				this.velocity.x = 0;
-				this.velocity.y = 3;
-			}
-		} else if (left) {
-			this.velocity.x = -3;
-			this.velocity.y = 0;
-		} else if (right) {
-			this.velocity.x = 3;
-			this.velocity.y = 0;
-		} else {
-			this.velocity.x = 0;
-			this.velocity.y = 0;
+		if (keyState["a"] || keyState ["A"] || keyState["ArrowLeft"]) {
+			this.velocity = this.velocity.add(new CartesianPoint(-1, 0))
 		}
-		if (keyState[" "] && this.cooldown === 0) {
-		    this.cooldown = 64
-            entities.push(new Projectile({id: "projectile", position: new Point(this.position.x, this.position.y), orientation: this.orientation, scale: this.scale}))
-            this.projectile = entities.length - 1;
+		if (keyState["d"] || keyState ["D"] || keyState["ArrowRight"]) {
+			this.velocity = this.velocity.add(new CartesianPoint(1, 0))
 		}
-		if (this.cooldown > 0) {
-		    this.cooldown--;
-		}
-		if (this.cooldown === 0 && this.projectile !== -1) {
-		    entities.splice(this.projectile, 1);
-		    this.projectile = -1;
-		}
-		this.position.set(this.position.x + this.velocity.x, this.position.y + this.velocity.y);
-		this.orientation = this.position.getDirection(mousePos);
-		this.drawHitbox(context);
-
-		var prevStyle = [context.fillStyle, context.strokeStyle, context.lineWidth];
-        context.strokeStyle = "#00FF00";
-        context.lineWidth = 2;
-        context.arc(this.position.x, this.position.y, 64 * 5 * this.scale, 0, 2 * Math.PI);
-        context.fillStyle = prevStyle[0];
-        context.strokeStyle = prevStyle[1];
-        context.lineWidth = prevStyle[2];
+		this.velocity = new PolarPoint(this.velocity.normalize().getMagnitude() * this.speed, this.velocity.getAngle())
+		this.position = this.position.add(this.velocity)
+		this.velocity = new PolarPoint(0, 0)
 	}
 };
 
@@ -404,10 +363,10 @@ class Projectile extends Entity {
 
 // Initialize game content
 var entities = new Array();
-entities.push(new Player({id: "Player", position: new Point(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Hitbox(new Point(-25, -25), new Point(25, -25), new Point(25, 25), new Point(-25, 25))}));
-var mousePos = new Point(0, 0);
+entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50)}));
+var mousePos = new CartesianPoint(0, 0);
 canvas.addEventListener('mousemove', (event) => {
-    mousePos.set(event.clientX, event.clientY);
+    mousePos = new CartesianPoint(event.clientX, event.clientY)
 });
 
 /********************************************************************************************************************************/
@@ -416,7 +375,7 @@ canvas.addEventListener('mousemove', (event) => {
 function loop() {
 	clearCanvas();
 	for (var i = 0; i < entities.length; i++) {
-		entities[i].update({keyState: keyState, canvas: canvas, context: context, entities: entities});
+		entities[i].update({canvas: canvas, context: context, entities: entities});
 	}
 	window.requestAnimationFrame(loop);
 }
