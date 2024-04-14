@@ -363,7 +363,7 @@ class Projectile extends Entity {
 
 // Initialize game content
 var entities = new Array();
-entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50)}));
+entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Group(new Rect(50, 50), new Circle(25))}));
 var mousePos = new CartesianPoint(0, 0);
 canvas.addEventListener('mousemove', (event) => {
 	mousePos = new CartesianPoint(event.clientX, event.clientY)
