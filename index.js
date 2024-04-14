@@ -258,16 +258,17 @@ class ListComponents extends Visitor {
 	onCircle(circle) {
 		let position = new CartesianPoint(0, 0)
 		this.stack.forEach(vector => position = position.add(vector))
-		return new Array(new Location(position.getX(), position.getY(), rect))
+		return new Array(new Location(position.getX(), position.getY(), circle))
 	}
 	onLocation(location) {
-		this.stack.push(new CartesianPoint(0, 0))
-		let output = location.accept(this)
+		this.stack.push(location.position)
+		let output = location.hitbox.accept(this)
 		this.stack.pop()
+		return output
 	}
 	onGroup(group) {
 		let output = new Array()
-		group.hitboxes.forEach(hitbox => (hitbox.accept(this).forEach(component => output.push(component))))
+		group.hitboxes.forEach((hitbox) => {output.push(hitbox.accept(this))})
 		return output
 	}
 }
@@ -296,9 +297,8 @@ class Entity {
 		// Base cases where either this or the other entity are not present in the world/collidable
 		if (this.position === undefined || other.position === undefined || this.hitbox === undefined || other.hitbox === undefined) {return false}
 		let componentFinder = new ListComponents()
-		let theseComponents = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(componentFinder)
-		let thoseComponents = new Location(other.position.getX(), other.position.getY(), other.hitbox).accept(componentFinder)
-		// TODO IMPLEMET COLLISION DETECTION
+		new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(componentFinder)
+		return false
 	}
 	// Draw the Entity
 	draw(context) {
@@ -317,6 +317,7 @@ class Entity {
 	}
 	// Update the entity according to a set of rules
 	update({canvas, context}) {
+		console.log(this.collidingWith(entities[0]))
 		this.drawHitbox(context);
 	}
 };
@@ -329,7 +330,7 @@ class Player extends Entity {
 		this.cooldown = 0;
 		this.projectile = -1;
 	}
-	update({canvas, context, entities}) {
+	update({canvas, context}) {
 		this.drawHitbox(context)
 		if (keyState["w"] || keyState["arrowup"]) {
 			this.velocity = this.velocity.add(new CartesianPoint(0, -1))
@@ -385,7 +386,7 @@ canvas.addEventListener('mousemove', (event) => {
 function loop() {
 	clearCanvas();
 	for (var i = 0; i < entities.length; i++) {
-		entities[i].update({canvas: canvas, context: context, entities: entities});
+		entities[i].update({canvas: canvas, context: context});
 	}
 	window.requestAnimationFrame(loop);
 }
