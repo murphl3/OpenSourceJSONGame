@@ -209,23 +209,28 @@ class Visitor {
 class DrawHitboxes extends Visitor {
 	constructor(context) {
 		super()
-		this.color = "#FF0000"
+		this.color = "#404040"
+		this.outline = "#FFFFFF"
 		this.context = context
 		this.position = new CartesianPoint(0, 0)
 	}
 	onRect(rect) {
 		var prevStyle = [this.context.fillStyle, this.context.strokeStyle]
 		this.context.fillStyle = this.color
+		this.context.strokeStyle = this.outline
 		this.context.fillRect(this.position.getX(), this.position.getY(), rect.width, rect.height)
+		this.context.strokeRect(this.position.getX(), this.position.getY(), rect.width, rect.height)
 		this.context.fillStyle = prevStyle[0]
 		this.context.strokeStyle = prevStyle[1]
 	}
 	onCircle(circle) {
 		var prevStyle = [this.context.fillStyle, this.context.strokeStyle];
 		this.context.fillStyle = this.color
+		this.context.strokeStyle = this.outline
 		this.context.beginPath()
 		this.context.arc (this.position.getX(), this.position.getY(), circle.radius, 0, 2 * Math.PI)
 		this.context.fill()
+		this.context.stroke()
 		this.context.fillStyle = prevStyle[0]
 		this.context.strokeStyle = prevStyle[1]
 	}
@@ -360,6 +365,13 @@ class Projectile extends Entity {
 
 // Initialize game content
 var entities = new Array();
+entities.push(new Entity({id: "Level", position: new CartesianPoint(0, 0), orientation: 0.0, scale: 1.0, hitbox: new Group(
+	new Rect(canvas.width, 20),
+	new Rect(20, canvas.height),
+	new Location(0, canvas.height - 20, new Rect(canvas.width, 20)),
+	new Location(canvas.width - 20, 0, new Rect(20, canvas.height)),
+	new Location(canvas.width / 2, canvas.height / 2, new Circle(50))
+)}));
 entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Group(new Rect(50, 50), new Circle(25))}));
 var mousePos = new CartesianPoint(0, 0);
 canvas.addEventListener('mousemove', (event) => {
