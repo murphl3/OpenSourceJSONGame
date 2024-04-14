@@ -19,17 +19,13 @@ clearCanvas();
 // Change this to initialize the keys needed to start the script
 const initializedKeys = [
 	"w",
-	"W",
-	"ArrowUp",
+	"arrowup",
 	"s",
-	"S",
-	"ArrowDown",
+	"arrowdown",
 	"a",
-	"A",
-	"ArrowLeft",
+	"arrowleft",
 	"d",
-	"D",
-	"ArrowRight",
+	"arrowright",
 	" ",
 ];
 var keyState = new Object();
@@ -37,10 +33,10 @@ for (var i = 0; i < initializedKeys.length; i++) {
 	keyState[initializedKeys[i]] = false;
 }
 window.addEventListener('keydown', (event) => {
-	keyState[event.key] = true;
+	keyState[event.key.toLowerCase()] = true;
 });
 window.addEventListener('keyup', (event) => {
-	keyState[event.key] = false;
+	keyState[event.key.toLowerCase()] = false;
 });
 
 /********************************************************************************************************************************/
@@ -329,16 +325,16 @@ class Player extends Entity {
 	}
 	update({canvas, context, entities}) {
 		this.drawHitbox(context)
-		if (keyState["w"] || keyState ["W"] || keyState["ArrowUp"]) {
+		if (keyState["w"] || keyState["arrowup"]) {
 			this.velocity = this.velocity.add(new CartesianPoint(0, -1))
 		}
-		if (keyState["s"] || keyState ["S"] || keyState["ArrowDown"]) {
+		if (keyState["s"] || keyState["arrowdown"]) {
 			this.velocity = this.velocity.add(new CartesianPoint(0, 1))
 		}
-		if (keyState["a"] || keyState ["A"] || keyState["ArrowLeft"]) {
+		if (keyState["a"] || keyState["arrowleft"]) {
 			this.velocity = this.velocity.add(new CartesianPoint(-1, 0))
 		}
-		if (keyState["d"] || keyState ["D"] || keyState["ArrowRight"]) {
+		if (keyState["d"] || keyState["arrowright"]) {
 			this.velocity = this.velocity.add(new CartesianPoint(1, 0))
 		}
 		this.velocity = new PolarPoint(this.velocity.normalize().getMagnitude() * this.speed, this.velocity.getAngle())
