@@ -209,7 +209,7 @@ class Visitor {
 class DrawHitboxes extends Visitor {
 	constructor(context) {
 		super()
-		this.color = "#404040"
+		this.color = "#FF0000"
 		this.outline = "#FFFFFF"
 		this.context = context
 		this.position = new CartesianPoint(0, 0)
