@@ -1,6 +1,6 @@
 // SETUP
 const canvas = document.getElementById("gameCanvas");
-const context = canvas.getContext("2d");
+const context = canvas.getContext("2d")
 canvas.width = 768;
 canvas.height = 768;
 function clearCanvas() {
@@ -28,6 +28,7 @@ const initializedKeys = [
 	"arrowright",
 	" ",
 ];
+canvas.oncontextmenu = function() { return false }
 var keyState = new Object();
 for (var i = 0; i < initializedKeys.length; i++) {
 	keyState[initializedKeys[i]] = false;
