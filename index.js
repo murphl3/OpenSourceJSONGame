@@ -204,19 +204,20 @@ class Visitor {
 
 class DrawHitboxes extends Visitor {
 	constructor(context) {
+		this.color = "#FF0000"
 		this.context = context
 		this.position = new CartesianPoint(0, 0)
 	}
 	onRect(rect) {
 		var prevStyle = [this.context.fillStyle, this.context.strokeStyle]
-		this.context.fillStyle = "#FF0000"
+		this.context.fillStyle = this.color
 		this.context.fillRect(this.position.getX(), this.position.getY(), rect.width, rect.height)
 		this.context.fillStyle = prevStyle[0]
 		this.context.strokeStyle = prevStyle[1]
 	}
 	onCircle(circle) {
 		var prevStyle = [this.context.fillStyle, this.context.strokeStyle];
-		this.context.fillStyle = "#FF0000"
+		this.context.fillStyle = this.color
 		this.context.beginPath()
 		this.context.arc (this.position.getX(), this.position.getY(), circle.radius, 0, 2 * Math.PI)
 		this.context.fill()
@@ -234,20 +235,45 @@ class DrawHitboxes extends Visitor {
 	}
 }
 
+class ListComponents {
+	constructor() {
+		this.stack = new Array()
+	}
+	onRect(rect) {
+		let position = new CartesianPoint(0, 0)
+		this.stack.forEach(vector => position = position.add(vector))
+		return new Array(new Location(position.getX(), position.getY(), rect))
+	}
+	onCircle(circle) {
+		let position = new CartesianPoint(0, 0)
+		this.stack.forEach(vector => position = position.add(vector))
+		return new Array(new Location(position.getX(), position.getY(), rect))
+	}
+	onLocation(location) {
+		this.stack.push(new CartesianPoint(0, 0))
+		let output = location.accept(this)
+		this.stack.pop()
+	}
+	onGroup(group) {
+		let output = new Array()
+		group.hitboxes.forEach(hitbox => (hitbox.accept(this).forEach(component => output.push(component))))
+		return output
+	}
+}
+
 class Entity {
 	// A top-level class which is a superclass of almost everything in the game
 	constructor({id, position, orientation, scale, hitbox, sprite}) {
-		// The unique ID of a given entity
 		this.id = id;
-		// The position of the entity in the world (should be undefined if entity is not present in the world, i.e. in inventory)
+		if (!(position instanceof Vector)) { throw new Error("Position Must be a Vector") }
 		this.position = position;
-		// The direction the entity, in radians (0 = facing right)
-		this.orientation = orientation;
-		// The scale of the entity
+		if (typeof(orientation) !== "number") { throw new Error("Orientation Must be a Number") }
+		this.orientation = orientation % (2 * Math.PI);
+		if (typeof(scale) !== "number") { throw new Error("Scale Must be a Number") }
+		if (scale <= 0) { throw new Error("Scale Must be Greater Than 0") }
 		this.scale = scale;
-		// The hitbox which is used to calculate collision when the position is not undefined (can also be undefined if the entity will never be present in the world or never collided with)
+		if (!(hitbox instanceof Hitbox)) { throw new Error("Hitbox Must be a Subclass of Custom Hitbox Class") }
 		this.hitbox = hitbox;
-		// This is what is drawn when an entity is in the world
 		this.sprite = sprite;
 		// Log the entity for debugging
 		console.log(this);
@@ -258,7 +284,10 @@ class Entity {
 		if (!(other instanceof Entity)) { throw new Error(other + " is not an Entity"); }
 		// Base cases where either this or the other entity are not present in the world/collidable
 		if (this.position === undefined || other.position === undefined || this.hitbox === undefined || other.hitbox === undefined) {return false}
-		// TODO: IMPLEMENT COLLISION
+		let componentFinder = new ListComponents()
+		let theseComponents = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(componentFinder)
+		let thoseComponents = new Location(other.position.getX(), other.position.getY(), other.hitbox).accept(componentFinder)
+		// TODO IMPLEMET COLLISION DETECTION
 	}
 	// Draw the Entity
 	draw(context) {
@@ -272,18 +301,8 @@ class Entity {
 	}
 	// Draw the hitbox of the entity
 	drawHitbox(context) {
-		var prevStyle = [context.fillStyle, context.strokeStyle, context.lineWidth];
-		context.strokeStyle = "#FF0000";
-		context.lineWidth = 2;
-		for (let i = 0; i < this.hitbox.points.length; i++) {
-			context.beginPath();
-			context.moveTo(this.hitbox.points[i].x + this.position.x, this.hitbox.points[i].y + this.position.y);
-			context.lineTo(this.hitbox.points[(i + 1) % this.hitbox.points.length].x + this.position.x, this.hitbox.points[(i + 1) % this.hitbox.points.length].y + this.position.y);
-			context.stroke();
-		}
-		context.fillStyle = prevStyle[0];
-		context.strokeStyle = prevStyle[1];
-		context.lineWidth = prevStyle[2];
+		let drawTool = new DrawHitboxes(context)
+		Location(this.position.getX(), this.position.getY(), this.hitbox).accept(drawTool)
 	}
 	// Update the entity according to a set of rules
 	update({canvas, context}) {
