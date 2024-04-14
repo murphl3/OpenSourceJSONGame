@@ -348,14 +348,14 @@ class Player extends Entity {
 };
 
 class Projectile extends Entity {
-    constructor(args) {
-        args.hitbox = new Hitbox(new Point(-5, 0), new Point(0, 5), new Point(5, 0), new Point(0, -5));
-        super(args);
-    }
-    update({canvas, context}) {
-        let new_position = new Vector(1, this.orientation).toPoint();
-        this.position.set(this.position.x + (new_position.x * 5 * this.scale), this.position.y + (new_position.y * 5 * this.scale));
-        this.drawHitbox(context);
+	constructor(args) {
+		args.hitbox = new Hitbox(new Point(-5, 0), new Point(0, 5), new Point(5, 0), new Point(0, -5));
+		super(args);
+	}
+	update({canvas, context}) {
+		let new_position = new Vector(1, this.orientation).toPoint();
+		this.position.set(this.position.x + (new_position.x * 5 * this.scale), this.position.y + (new_position.y * 5 * this.scale));
+		this.drawHitbox(context);
 	}
 };
 
@@ -366,7 +366,7 @@ var entities = new Array();
 entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50)}));
 var mousePos = new CartesianPoint(0, 0);
 canvas.addEventListener('mousemove', (event) => {
-    mousePos = new CartesianPoint(event.clientX, event.clientY)
+	mousePos = new CartesianPoint(event.clientX, event.clientY)
 });
 
 /********************************************************************************************************************************/
