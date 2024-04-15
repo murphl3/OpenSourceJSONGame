@@ -268,7 +268,7 @@ class ListComponents extends Visitor {
 	}
 	onGroup(group) {
 		let output = new Array()
-		group.hitboxes.forEach((hitbox) => {output.push(hitbox.accept(this))})
+		group.hitboxes.forEach((hitbox) => {hitbox.accept(this).forEach((component) => output.push(component))})
 		return output
 	}
 }
@@ -297,8 +297,15 @@ class Entity {
 		// Base cases where either this or the other entity are not present in the world/collidable
 		if (this.position === undefined || other.position === undefined || this.hitbox === undefined || other.hitbox === undefined) {return false}
 		let componentFinder = new ListComponents()
-		new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(componentFinder)
+		var these = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(componentFinder)
+		var those = new Location(other.position.getX(), other.position.getY(), other.hitbox).accept(componentFinder)
 		return false
+	}
+	// List all entities this entity is colliding with
+	getCollisions() {
+		var output = new Array()
+		entities.forEach((entity) => {console.log(this.collidingWith(entity))})
+		return output
 	}
 	// Draw the Entity
 	draw(context) {
@@ -317,7 +324,6 @@ class Entity {
 	}
 	// Update the entity according to a set of rules
 	update({canvas, context}) {
-		console.log(this.collidingWith(entities[0]))
 		this.drawHitbox(context);
 	}
 };
@@ -345,7 +351,12 @@ class Player extends Entity {
 			this.velocity = this.velocity.add(new CartesianPoint(1, 0))
 		}
 		this.velocity = new PolarPoint(this.velocity.normalize().getMagnitude() * this.speed, this.velocity.getAngle())
+		let prevPos = this.position
 		this.position = this.position.add(this.velocity)
+		if (this.getCollisions().length !== 0) {
+			this.position = prevPos
+			console.log("Collision!")
+		}
 		this.velocity = new PolarPoint(0, 0)
 	}
 };
@@ -384,11 +395,9 @@ canvas.addEventListener('mousemove', (event) => {
 
 // GAME LOGIC
 function loop() {
-	clearCanvas();
-	for (var i = 0; i < entities.length; i++) {
-		entities[i].update({canvas: canvas, context: context});
-	}
-	window.requestAnimationFrame(loop);
+	clearCanvas()
+	entities.forEach((entity) => {entity.update({canvas: canvas, context: context})})
+	window.requestAnimationFrame(loop)
 }
 
 /********************************************************************************************************************************/
