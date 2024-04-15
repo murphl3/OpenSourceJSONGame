@@ -411,15 +411,74 @@ class Projectile extends Entity {
 /********************************************************************************************************************************/
 
 // Initialize game content
+var levelCreation = true
+if (levelCreation) {
+	var initialPos = new CartesianPoint(-1, -1)
+	var creationState = undefined
+	canvas.addEventListener("mousedown", (event) => {
+		if (creationState === undefined) {
+			switch (event.button) {
+				case 0:
+				case 2:
+					creationState = event.button
+					initialPos = mousePos.toCartesianPoint()
+					break
+				default:
+					break
+			}
+		}
+		console.log(initialPos)
+	})
+	canvas.addEventListener("mouseup", (event) => {
+		if (event.button === creationState) {
+			switch (creationState) {
+				case 0:
+					entities.push(new Entity({id: "Level", position: initialPos, orientation: 0.0, scale: 1.0, hitbox: new Rect(mousePos.getX() - initialPos.getX(), mousePos.getY() - initialPos.getY())}))
+					creationState = undefined
+					initialPos = new CartesianPoint(-1, -1)
+					break
+				case 2:
+					entities.push(new Entity({id: "Level", position: initialPos, orientation: 0.0, scale: 1.0, hitbox: new Circle(mousePos.subtract(initialPos).getMagnitude())}))
+					creationState = undefined
+					initialPos = new CartesianPoint(-1, -1)
+					break
+				default:
+					break
+			}
+		}
+	})
+	levelRenderer = function() {
+		var prevStyle = [context.fillStyle, context.strokeStyle];
+		switch (creationState) {
+			case 0:
+				context.strokeStyle = "#0000FF";
+				context.strokeRect(initialPos.getX(), initialPos.getY(), mousePos.getX() - initialPos.getX(), mousePos.getY() - initialPos.getY())
+				context.stroke()
+				break
+			case 2:
+				context.strokeStyle = "#0000FF";
+				context.arc(initialPos.getX(), initialPos.getY(), initialPos.subtract(mousePos).getMagnitude(), 0, 2 * Math.PI)
+				context.stroke()
+				break
+			default:
+				break
+		}
+		context.strokeStyle = "#00FF00";
+		context.beginPath()
+		context.moveTo(0, 0)
+		context.lineTo(mousePos.getX(), mousePos.getY())
+		context.lineTo(canvas.width, 0)
+		context.stroke()
+		context.beginPath()
+		context.moveTo(0, canvas.height)
+		context.lineTo(mousePos.getX(), mousePos.getY())
+		context.lineTo(canvas.width, canvas.height)
+		context.stroke()
+		context.fillStyle = prevStyle[0];
+		context.strokeStyle = prevStyle[1];
+	}
+}
 var entities = new Array();
-entities.push(new Entity({id: "Level", position: new CartesianPoint(0, 0), orientation: 0.0, scale: 1.0, hitbox: new Group(
-	new Rect(canvas.width, 20),
-	new Rect(20, canvas.height),
-	new Location(0, canvas.height - 20, new Rect(canvas.width, 20)),
-	new Location(canvas.width - 20, 0, new Rect(20, canvas.height)),
-	new Location(canvas.width / 2, canvas.height / 2, new Circle(50)),
-	new Location (canvas.width / 4, canvas.height / 4, new Rect(20, 20))
-)}));
 entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Group(new Rect(50, 50), new Circle(25))}));
 var mousePos = new CartesianPoint(0, 0);
 canvas.addEventListener('mousemove', (event) => {
@@ -433,6 +492,9 @@ canvas.addEventListener('mousemove', (event) => {
 function loop() {
 	clearCanvas()
 	entities.forEach((entity) => {entity.update({canvas: canvas, context: context})})
+	if (levelCreation) {
+		levelRenderer()
+	}
 	window.requestAnimationFrame(loop)
 }
 
