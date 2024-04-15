@@ -299,12 +299,47 @@ class Entity {
 		let componentFinder = new ListComponents()
 		var these = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(componentFinder)
 		var those = new Location(other.position.getX(), other.position.getY(), other.hitbox).accept(componentFinder)
+		for (let i = 0; i < these.length; i++) {
+			for (let j = 0; j < those.length; j++) {
+				if (these[i].hitbox instanceof Circle && those[j].hitbox instanceof Circle) {
+					if (these[i].position.subtract(those[j].position).getMagnitude() < these[i].hitbox.radius + those[j].hitbox.radius) { return true }
+				} else if (these[i].hitbox instanceof Rect && those[j].hitbox instanceof Rect) {
+					let left = these[i].position.getX()
+					if (those[j].position.getX() < left) { left = those[j].position.getX() }
+					let right = these[i].position.getX() + these[i].hitbox.width
+					if (those[j].position.getX() + those[j].hitbox.width > right) { right = those[j].position.getX() + those[j].hitbox.width }
+					if (right - left <= these[i].hitbox.width + those[j].hitbox.width) {
+						let top = these[i].position.getY()
+						if (those[j].position.getY() < top) { top = those[j].position.getY() }
+						let bottom = these[i].position.getY() + these[i].hitbox.height
+						if (bottom < those[j].position.getY() + those[j].hitbox.height) { bottom = those[j].position.getY() + those[j].hitbox.height }
+						if (bottom - top <= these[i].hitbox.height + those[j].hitbox.height) { return true }
+					}
+				} else if (these[i].hitbox instanceof Circle && those[j].hitbox instanceof Rect || these[i].hitbox instanceof Rect && those[j].hitbox instanceof Circle) {
+					var circle = these[i]
+					var rect = those[j]
+					if (those[j].hitbox instanceof Circle) {
+						circle = those[j]
+						rect = these[i]
+					}
+					let closest = new Object()
+					if (circle.position.getX() < rect.position.getX()) {closest.x = rect.position.getX()}
+					else if (circle.position.getX() > rect.position.getX() + rect.hitbox.width) {closest.x = rect.position.getX() + rect.hitbox.width}
+					if (circle.position.getY() < rect.position.getY()) {closest.y = rect.position.getY()}
+					else if (circle.position.getY() > rect.position.getY() + rect.hitbox.height) {closest.y = rect.position.getY() + rect.hitbox.height}
+					if (closest.x === undefined && closest.y === undefined) { return true }
+					if (closest.x === undefined) { closest.x = circle.position.getX() }
+					if (closest.y === undefined) { closest.y = circle.position.getY() }
+					if (new CartesianPoint(closest.x, closest.y).subtract(circle.position).getMagnitude() < circle.hitbox.radius) { return true }
+				}
+			}
+		}
 		return false
 	}
 	// List all entities this entity is colliding with
 	getCollisions() {
 		var output = new Array()
-		entities.forEach((entity) => {console.log(this.collidingWith(entity))})
+		entities.forEach((entity) => {if (entity !== this && this.collidingWith(entity)) {output.push(entity)}})
 		return output
 	}
 	// Draw the Entity
@@ -382,7 +417,8 @@ entities.push(new Entity({id: "Level", position: new CartesianPoint(0, 0), orien
 	new Rect(20, canvas.height),
 	new Location(0, canvas.height - 20, new Rect(canvas.width, 20)),
 	new Location(canvas.width - 20, 0, new Rect(20, canvas.height)),
-	new Location(canvas.width / 2, canvas.height / 2, new Circle(50))
+	new Location(canvas.width / 2, canvas.height / 2, new Circle(50)),
+	new Location (canvas.width / 4, canvas.height / 4, new Rect(20, 20))
 )}));
 entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Group(new Rect(50, 50), new Circle(25))}));
 var mousePos = new CartesianPoint(0, 0);
