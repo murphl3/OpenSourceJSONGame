@@ -1,7 +1,7 @@
 // SETUP
 const canvas = document.getElementById("gameCanvas");
 const context = canvas.getContext("2d")
-canvas.width = 768;
+canvas.width = 1092;
 canvas.height = 768;
 function clearCanvas() {
 	var prevStyle = [context.fillStyle, context.strokeStyle];
@@ -344,13 +344,10 @@ class Entity {
 	}
 	// Draw the Entity
 	draw(context) {
-		if (this.position === undefined) { return; }
-		context.drawImage(this.sprite.getImage(), this.position.x, this.position.y)
-		/*
-
-		TODO ADD A SPRITE CLASS AND ADJUST IMAGE FOR ORIENTATION (SPRITE CLASS ALLOWS FOR ANIMATION)
-
-		*/
+		if (this.position === undefined || this.sprite === undefined) { return }
+		let image = new Image()
+		image.src = this.sprite
+		context.drawImage(image, this.position.getX(), this.position.getY())
 	}
 	// Draw the hitbox of the entity
 	drawHitbox(context) {
@@ -359,12 +356,14 @@ class Entity {
 	}
 	// Update the entity according to a set of rules
 	update({canvas, context}) {
-		this.drawHitbox(context);
+		this.drawHitbox(context)
+		this.draw(context)
 	}
 };
 
 class Player extends Entity {
 	constructor(args) {
+		args.id = "Player"
 		super(args);
 		this.speed = 3;
 		this.velocity = new PolarPoint(0, 0);
@@ -372,7 +371,6 @@ class Player extends Entity {
 		this.projectile = -1;
 	}
 	update({canvas, context}) {
-		this.drawHitbox(context)
 		if (keyState["w"] || keyState["arrowup"]) {
 			this.velocity = this.velocity.add(new CartesianPoint(0, -1))
 		}
@@ -390,11 +388,21 @@ class Player extends Entity {
 		this.position = this.position.add(this.velocity)
 		if (this.getCollisions().length !== 0) {
 			this.position = prevPos
-			console.log("Collision!")
 		}
 		this.velocity = new PolarPoint(0, 0)
+		this.drawHitbox(context)
+		this.draw(context)
 	}
 };
+
+class LevelElement extends Entity {
+	constructor(args) {
+		args.id = "Level"
+		args.orientation = 0.0
+		args.scale = 1.0
+		super(args)
+	}
+}
 
 class Projectile extends Entity {
 	constructor(args) {
@@ -411,8 +419,10 @@ class Projectile extends Entity {
 /********************************************************************************************************************************/
 
 // Initialize game content
+var entities = new Array();
 var levelCreation = true
 if (levelCreation) {
+	entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group()}))
 	var initialPos = new CartesianPoint(-1, -1)
 	var creationState = undefined
 	canvas.addEventListener("mousedown", (event) => {
@@ -478,8 +488,7 @@ if (levelCreation) {
 		context.strokeStyle = prevStyle[1];
 	}
 }
-var entities = new Array();
-entities.push(new Player({id: "Player", position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Group(new Rect(50, 50), new Circle(25))}));
+entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50), sprite: "./Player.png"}));
 var mousePos = new CartesianPoint(0, 0);
 canvas.addEventListener('mousemove', (event) => {
 	let canvasData = canvas.getBoundingClientRect()
