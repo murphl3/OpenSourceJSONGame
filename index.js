@@ -1,16 +1,16 @@
 // SETUP
-const canvas = document.getElementById("gameCanvas");
+const canvas = document.getElementById("gameCanvas")
 const context = canvas.getContext("2d")
-canvas.width = 1092;
-canvas.height = 768;
+canvas.width = 1092
+canvas.height = 768
 function clearCanvas() {
-	var prevStyle = [context.fillStyle, context.strokeStyle];
-	context.fillStyle = "#000000";
-	context.fillRect(0, 0, canvas.width, canvas.height);
-	context.fillStyle = prevStyle[0];
-	context.strokeStyle = prevStyle[1];
+	var prevStyle = [context.fillStyle, context.strokeStyle]
+	context.fillStyle = "#000000"
+	context.fillRect(0, 0, canvas.width, canvas.height)
+	context.fillStyle = prevStyle[0]
+	context.strokeStyle = prevStyle[1]
 }
-clearCanvas();
+clearCanvas()
 
 /********************************************************************************************************************************/
 
@@ -27,18 +27,18 @@ const initializedKeys = [
 	"d",
 	"arrowright",
 	" ",
-];
+]
 canvas.oncontextmenu = function() { return false }
-var keyState = new Object();
+var keyState = new Object()
 for (var i = 0; i < initializedKeys.length; i++) {
-	keyState[initializedKeys[i]] = false;
+	keyState[initializedKeys[i]] = false
 }
 window.addEventListener('keydown', (event) => {
-	keyState[event.key.toLowerCase()] = true;
-});
+	keyState[event.key.toLowerCase()] = true
+})
 window.addEventListener('keyup', (event) => {
-	keyState[event.key.toLowerCase()] = false;
-});
+	keyState[event.key.toLowerCase()] = false
+})
 
 /********************************************************************************************************************************/
 
@@ -74,7 +74,7 @@ class CartesianPoint extends Vector {
 		return this.y
 	}
 	getMagnitude() {
-		return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
+		return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2))
 	}
 	getAngle() {
 		return Math.atan2(this.y, this.x)
@@ -149,11 +149,11 @@ class PolarPoint extends Vector {
 	}
 	add(other) {
 		if (!(other instanceof Vector)) { throw new Error("\"add\" only accepts Vectors") }
-		return new CartesianPoint(this.getX() + other.getX(), this.getY() + other.getY()).toPolarPoint();
+		return new CartesianPoint(this.getX() + other.getX(), this.getY() + other.getY()).toPolarPoint()
 	}
 	subtract(other) {
 		if (!(other instanceof Vector)) { throw new Error("\"subtract\" only accepts Vectors") }
-		return new CartesianPoint(this.getX() - other.getX(), this.getY() - other.getY()).toPolarPoint();
+		return new CartesianPoint(this.getX() - other.getX(), this.getY() - other.getY()).toPolarPoint()
 	}
 }
 
@@ -165,8 +165,8 @@ class Rect extends Hitbox {
 	constructor(width, height) {
 		if (typeof(width) !== "number" || typeof(height) !== "number" || width < 0 || height < 0) { throw new Error("Invalid Width/Height Pair: (" + width + ", " + height + ")") }
 		super()
-		this.width = width;
-		this.height = height;
+		this.width = width
+		this.height = height
 	}
 	accept(visitor) { return visitor.onRect(this) }
 }
@@ -224,7 +224,7 @@ class DrawHitboxes extends Visitor {
 		this.context.strokeStyle = prevStyle[1]
 	}
 	onCircle(circle) {
-		var prevStyle = [this.context.fillStyle, this.context.strokeStyle];
+		var prevStyle = [this.context.fillStyle, this.context.strokeStyle]
 		this.context.fillStyle = this.color
 		this.context.strokeStyle = this.outline
 		this.context.beginPath()
@@ -276,24 +276,24 @@ class ListComponents extends Visitor {
 class Entity {
 	// A top-level class which is a superclass of almost everything in the game
 	constructor({id, position, orientation, scale, hitbox, sprite}) {
-		this.id = id;
+		this.id = id
 		if (!(position instanceof Vector)) { throw new Error("Position Must be a Vector") }
-		this.position = position;
+		this.position = position
 		if (typeof(orientation) !== "number") { throw new Error("Orientation Must be a Number") }
-		this.orientation = orientation % (2 * Math.PI);
+		this.orientation = orientation % (2 * Math.PI)
 		if (typeof(scale) !== "number") { throw new Error("Scale Must be a Number") }
 		if (scale <= 0) { throw new Error("Scale Must be Greater Than 0") }
-		this.scale = scale;
+		this.scale = scale
 		if (!(hitbox instanceof Hitbox)) { throw new Error("Hitbox Must be a Subclass of Custom Hitbox Class") }
-		this.hitbox = hitbox;
-		this.sprite = sprite;
+		this.hitbox = hitbox
+		this.sprite = sprite
 		// Log the entity for debugging
-		console.log(this);
+		console.log(this)
 	}
 	// Checks collision
 	collidingWith(other) {
 		// Error detection
-		if (!(other instanceof Entity)) { throw new Error(other + " is not an Entity"); }
+		if (!(other instanceof Entity)) { throw new Error(other + " is not an Entity") }
 		// Base cases where either this or the other entity are not present in the world/collidable
 		if (this.position === undefined || other.position === undefined || this.hitbox === undefined || other.hitbox === undefined) {return false}
 		let componentFinder = new ListComponents()
@@ -362,16 +362,16 @@ class Entity {
 		this.drawHitbox(context)
 		this.draw(context)
 	}
-};
+}
 
 class Player extends Entity {
 	constructor(args) {
 		args.id = "Player"
-		super(args);
-		this.speed = 3;
-		this.velocity = new PolarPoint(0, 0);
-		this.cooldown = 0;
-		this.projectileCount = 0;
+		super(args)
+		this.speed = 3
+		this.velocity = new PolarPoint(0, 0)
+		this.cooldown = 0
+		this.projectileCount = 0
 	}
 	despawnProjectile() {
 		this.projectileCount -= 1
@@ -413,7 +413,7 @@ class Player extends Entity {
 		this.drawHitbox(context)
 		this.draw(context)
 	}
-};
+}
 
 class LevelElement extends Entity {
 	constructor(args) {
@@ -447,7 +447,7 @@ class Projectile extends Entity {
 /********************************************************************************************************************************/
 
 // Initialize game content
-var entities = new Array();
+var entities = new Array()
 var levelCreation = true
 if (levelCreation) {
 	entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group()}))
@@ -494,22 +494,21 @@ if (levelCreation) {
 		}
 	})
 	levelRenderer = function() {
-		var prevStyle = [context.fillStyle, context.strokeStyle];
+		var prevStyle = [context.fillStyle, context.strokeStyle]
+		context.strokeStyle = "#0000FF"
 		switch (creationState) {
 			case 0:
-				context.strokeStyle = "#0000FF";
 				context.strokeRect(initialPos.getX(), initialPos.getY(), mousePos.getX() - initialPos.getX(), mousePos.getY() - initialPos.getY())
 				context.stroke()
 				break
 			case 2:
-				context.strokeStyle = "#0000FF";
 				context.arc(initialPos.getX(), initialPos.getY(), initialPos.subtract(mousePos).getMagnitude(), 0, 2 * Math.PI)
 				context.stroke()
 				break
 			default:
 				break
 		}
-		context.strokeStyle = "#00FF00";
+		context.strokeStyle = "#00FF00"
 		context.beginPath()
 		context.moveTo(0, 0)
 		context.lineTo(mousePos.getX(), mousePos.getY())
@@ -520,16 +519,16 @@ if (levelCreation) {
 		context.lineTo(mousePos.getX(), mousePos.getY())
 		context.lineTo(canvas.width, canvas.height)
 		context.stroke()
-		context.fillStyle = prevStyle[0];
-		context.strokeStyle = prevStyle[1];
+		context.fillStyle = prevStyle[0]
+		context.strokeStyle = prevStyle[1]
 	}
 }
-entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50), sprite: "./Player.png"}));
-var mousePos = new CartesianPoint(0, 0);
+entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50), sprite: "./Player.png"}))
+var mousePos = new CartesianPoint(0, 0)
 canvas.addEventListener('mousemove', (event) => {
 	let canvasData = canvas.getBoundingClientRect()
 	mousePos = new CartesianPoint(event.clientX - canvasData.x, event.clientY - canvasData.y)
-});
+})
 
 /********************************************************************************************************************************/
 
@@ -547,4 +546,4 @@ function loop() {
 /********************************************************************************************************************************/
 
 // START GAME LOOP
-loop();
+loop()
