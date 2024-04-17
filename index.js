@@ -302,7 +302,7 @@ class Entity {
 		for (let i = 0; i < these.length; i++) {
 			for (let j = 0; j < those.length; j++) {
 				if (these[i].hitbox instanceof Circle && those[j].hitbox instanceof Circle) {
-					if (these[i].position.subtract(those[j].position).getMagnitude() < these[i].hitbox.radius + those[j].hitbox.radius) { return true }
+					if (these[i].position.subtract(those[j].position).getMagnitude() < these[i].hitbox.radius + those[j].hitbox.radius) { return these[i], those[j] }
 				} else if (these[i].hitbox instanceof Rect && those[j].hitbox instanceof Rect) {
 					let left = these[i].position.getX()
 					if (those[j].position.getX() < left) { left = those[j].position.getX() }
@@ -313,7 +313,7 @@ class Entity {
 						if (those[j].position.getY() < top) { top = those[j].position.getY() }
 						let bottom = these[i].position.getY() + these[i].hitbox.height
 						if (bottom < those[j].position.getY() + those[j].hitbox.height) { bottom = those[j].position.getY() + those[j].hitbox.height }
-						if (bottom - top <= these[i].hitbox.height + those[j].hitbox.height) { return true }
+						if (bottom - top <= these[i].hitbox.height + those[j].hitbox.height) { return these[i], those[j] }
 					}
 				} else if (these[i].hitbox instanceof Circle && those[j].hitbox instanceof Rect || these[i].hitbox instanceof Rect && those[j].hitbox instanceof Circle) {
 					var circle = these[i]
@@ -327,10 +327,10 @@ class Entity {
 					else if (circle.position.getX() > rect.position.getX() + rect.hitbox.width) {closest.x = rect.position.getX() + rect.hitbox.width}
 					if (circle.position.getY() < rect.position.getY()) {closest.y = rect.position.getY()}
 					else if (circle.position.getY() > rect.position.getY() + rect.hitbox.height) {closest.y = rect.position.getY() + rect.hitbox.height}
-					if (closest.x === undefined && closest.y === undefined) { return true }
+					if (closest.x === undefined && closest.y === undefined) { return these[i], those[j] }
 					if (closest.x === undefined) { closest.x = circle.position.getX() }
 					if (closest.y === undefined) { closest.y = circle.position.getY() }
-					if (new CartesianPoint(closest.x, closest.y).subtract(circle.position).getMagnitude() < circle.hitbox.radius) { return true }
+					if (new CartesianPoint(closest.x, closest.y).subtract(circle.position).getMagnitude() < circle.hitbox.radius) { return these[i], those[j] }
 				}
 			}
 		}
@@ -339,7 +339,10 @@ class Entity {
 	// List all entities this entity is colliding with
 	getCollisions() {
 		var output = new Array()
-		entities.forEach((entity) => {if (entity !== this && this.collidingWith(entity)) {output.push(entity)}})
+		entities.forEach((entity) => {
+			let collision = this.collidingWith(entity)
+			if (entity !== this && collision) {output.push([entity, collision[0], collision[1]])}}
+		)
 		return output
 	}
 	// Draw the Entity
@@ -368,7 +371,10 @@ class Player extends Entity {
 		this.speed = 3;
 		this.velocity = new PolarPoint(0, 0);
 		this.cooldown = 0;
-		this.projectile = -1;
+		this.projectileCount = 0;
+	}
+	despawnProjectile() {
+		this.projectileCount -= 1
 	}
 	update({canvas, context}) {
 		if (keyState["w"] || keyState["arrowup"]) {
@@ -386,10 +392,24 @@ class Player extends Entity {
 		this.velocity = new PolarPoint(this.velocity.normalize().getMagnitude() * this.speed, this.velocity.getAngle())
 		let prevPos = this.position
 		this.position = this.position.add(this.velocity)
-		if (this.getCollisions().length !== 0) {
+		let collisions = this.getCollisions()
+		if (collisions.length !== 0 && collisions.some((entity) => {entity[0].id === "Level"})) {
 			this.position = prevPos
 		}
 		this.velocity = new PolarPoint(0, 0)
+		let center = new CartesianPoint(this.position.getX() + 25, this.position.getY() + 25)
+		this.orientation = mousePos.subtract(center).getAngle()
+		
+		if (keyState[" "] && this.cooldown === 0 && this.projectileCount < 5) {
+			this.projectileCount += 1
+			this.cooldown = 16
+			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0}, 5 * this.cooldown.valueOf()))
+		}
+
+		if (this.cooldown > 0) {
+			this.cooldown -= 1
+		}
+
 		this.drawHitbox(context)
 		this.draw(context)
 	}
@@ -405,22 +425,30 @@ class LevelElement extends Entity {
 }
 
 class Projectile extends Entity {
-	constructor(args) {
-		args.hitbox = new Hitbox(new Point(-5, 0), new Point(0, 5), new Point(5, 0), new Point(0, -5));
-		super(args);
+	constructor(args, fuse) {
+		args.hitbox = new Circle(10)
+		super(args)
+		this.fuse = fuse
+		this.speed = 5
 	}
 	update({canvas, context}) {
-		let new_position = new Vector(1, this.orientation).toPoint();
-		this.position.set(this.position.x + (new_position.x * 5 * this.scale), this.position.y + (new_position.y * 5 * this.scale));
-		this.drawHitbox(context);
+		let collisions = this.getCollisions()
+		if (this.fuse <= 0 || collisions.some((entity) => entity[0].id === "Level")) {
+			entities.splice(entities.findIndex((entity) => {entity === this}), 1)
+			entities.forEach((entity) => {if (entity.id === "Player") { entity.despawnProjectile() }})
+		}
+		this.fuse -= 1
+		this.position = this.position.add(new PolarPoint(this.speed, this.orientation))
+		this.drawHitbox(context)
+		this.draw(context)
 	}
-};
+}
 
 /********************************************************************************************************************************/
 
 // Initialize game content
 var entities = new Array();
-var levelCreation = true
+var levelCreation = false
 if (levelCreation) {
 	entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group()}))
 	var initialPos = new CartesianPoint(-1, -1)
@@ -504,6 +532,7 @@ function loop() {
 	if (levelCreation) {
 		levelRenderer()
 	}
+	console.log(entities)
 	window.requestAnimationFrame(loop)
 }
 
