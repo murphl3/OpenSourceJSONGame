@@ -471,7 +471,15 @@ if (levelCreation) {
 		if (event.button === creationState) {
 			switch (creationState) {
 				case 0:
-					entities.push(new LevelElement({position: initialPos, hitbox: new Rect(mousePos.getX() - initialPos.getX(), mousePos.getY() - initialPos.getY())}))
+					let width = Math.abs(mousePos.getX() - initialPos.getX())
+					let height = Math.abs(mousePos.getY() - initialPos.getY())
+					if (mousePos.getX() < initialPos.getX()) {
+						initialPos = new CartesianPoint(mousePos.getX(), initialPos.getY())
+					}
+					if (mousePos.getY() < initialPos.getY()) {
+						initialPos = new CartesianPoint(initialPos.getX(), mousePos.getY())
+					}
+					entities.push(new LevelElement({position: initialPos, hitbox: new Rect(width, height)}))
 					creationState = undefined
 					initialPos = new CartesianPoint(-1, -1)
 					break
