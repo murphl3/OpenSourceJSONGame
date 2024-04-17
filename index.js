@@ -403,7 +403,7 @@ class Player extends Entity {
 		if (keyState[" "] && this.cooldown === 0 && this.projectileCount < 5) {
 			this.projectileCount += 1
 			this.cooldown = 16
-			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0}, 5 * this.cooldown.valueOf()))
+			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0}, 5 * this.cooldown))
 		}
 
 		if (this.cooldown > 0) {
@@ -471,12 +471,12 @@ if (levelCreation) {
 		if (event.button === creationState) {
 			switch (creationState) {
 				case 0:
-					entities.push(new Entity({id: "Level", position: initialPos, orientation: 0.0, scale: 1.0, hitbox: new Rect(mousePos.getX() - initialPos.getX(), mousePos.getY() - initialPos.getY())}))
+					entities.push(new LevelElement({position: initialPos, hitbox: new Rect(mousePos.getX() - initialPos.getX(), mousePos.getY() - initialPos.getY())}))
 					creationState = undefined
 					initialPos = new CartesianPoint(-1, -1)
 					break
 				case 2:
-					entities.push(new Entity({id: "Level", position: initialPos, orientation: 0.0, scale: 1.0, hitbox: new Circle(mousePos.subtract(initialPos).getMagnitude())}))
+					entities.push(new LevelElement({position: initialPos, hitbox: new Circle(mousePos.subtract(initialPos).getMagnitude())}))
 					creationState = undefined
 					initialPos = new CartesianPoint(-1, -1)
 					break
