@@ -450,6 +450,9 @@ class Projectile extends Entity {
 var entities = new Array()
 var levelCreation = true
 if (levelCreation) {
+	keyState["control"] = false
+	keyState["z"] = false
+	undo = 0
 	entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group()}))
 	var initialPos = new CartesianPoint(-1, -1)
 	var creationState = undefined
@@ -508,6 +511,7 @@ if (levelCreation) {
 			default:
 				break
 		}
+
 		context.strokeStyle = "#00FF00"
 		context.beginPath()
 		context.moveTo(0, 0)
@@ -521,6 +525,14 @@ if (levelCreation) {
 		context.stroke()
 		context.fillStyle = prevStyle[0]
 		context.strokeStyle = prevStyle[1]
+	}
+	editorUpdate = function() {
+		if (undo > 0) { undo -= 1 }
+		if (keyState["control"] && keyState["z"] && undo === 0 && entities.length > 2) {
+			entities.splice(-1, 1)
+			undo = 32
+		}
+		levelRenderer()
 	}
 }
 entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50), sprite: "./Player.png"}))
@@ -537,9 +549,8 @@ function loop() {
 	clearCanvas()
 	entities.forEach((entity) => {entity.update({canvas: canvas, context: context})})
 	if (levelCreation) {
-		levelRenderer()
+		editorUpdate()
 	}
-	console.log(entities)
 	window.requestAnimationFrame(loop)
 }
 
