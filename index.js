@@ -393,7 +393,7 @@ class Player extends Entity {
 		let prevPos = this.position
 		this.position = this.position.add(this.velocity)
 		let collisions = this.getCollisions()
-		if (collisions.length !== 0 && collisions.some((entity) => {entity[0].id === "Level"})) {
+		if (collisions.some((entity) => { return entity[0].id === "Level" })) {
 			this.position = prevPos
 		}
 		this.velocity = new PolarPoint(0, 0)
@@ -448,7 +448,7 @@ class Projectile extends Entity {
 
 // Initialize game content
 var entities = new Array();
-var levelCreation = false
+var levelCreation = true
 if (levelCreation) {
 	entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group()}))
 	var initialPos = new CartesianPoint(-1, -1)
