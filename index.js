@@ -273,6 +273,53 @@ class ListComponents extends Visitor {
 	}
 }
 
+class BoundingBox extends Visitor {
+	constructor() {
+		super()
+		this.currentPos = new CartesianPoint(0, 0)
+		this.left = NaN
+		this.right = NaN
+		this.top = NaN
+		this.bottom = NaN
+	}
+	onRect(rect) {
+		if (isNaN(this.left)) { this.initialize() }
+		if (this.currentPos.getX() < this.left) { this.left = this.currentPos.getX() }
+		if (this.currentPos.getX() + rect.width > this.right) { this.right = this.currentPos.getX() + rect.width }
+		if (this.currentPos.getY() < this.top) { this.top = this.currentPos.getY() }
+		if (this.currentPos.getY() + rect.height > this.bottom) { this.bottom = this.currentPos.getY() + rect.height }
+		return this.outputCurrent()
+	}
+	onCircle(circle) {
+		if (isNaN(this.left)) { this.initialize() }
+		if (this.currentPos.getX() - circle.radius < this.left) { this.left = this.currentPos.getX() - circle.radius }
+		if (this.currentPos.getX() + circle.radius > this.right) { this.right = this.currentPos.getX() + circle.radius }
+		if (this.currentPos.getY() - circle.radius < this.top) { this.top = this.currentPos.getY() - circle.radius }
+		if (this.currentPos.getY() + circle.radius > this.bottom) { this.bottom = this.currentPos.getY() + circle.radius }
+		return this.outputCurrent()
+	}
+	onLocation(location) {
+		let prevPos = this.currentPos
+		this.currentPos = location.position
+		location.hitbox.accept(this)
+		this.currentPos = prevPos
+		return this.outputCurrent()
+	}
+	onGroup(group) {
+		group.hitboxes.forEach((hitbox) => { hitbox.accept(this) })
+		return this.outputCurrent()
+	}
+	initialize() {
+		this.left = this.currentPos.getX()
+		this.right = this.currentPos.getX()
+		this.top = this.currentPos.getY()
+		this.bottom = this.currentPos.getY()
+	}
+	outputCurrent() {
+		return new Location(this.left, this.top, new Rect(this.right - this.left, this.bottom - this.top))
+	}
+}
+
 class Entity {
 	// A top-level class which is a superclass of almost everything in the game
 	constructor({id, position, orientation, scale, hitbox, sprite}) {
@@ -350,7 +397,8 @@ class Entity {
 		if (this.position === undefined || this.sprite === undefined) { return }
 		let image = new Image()
 		image.src = this.sprite
-		context.drawImage(image, this.position.getX(), this.position.getY())
+		let boundingBox = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(new BoundingBox)
+		context.drawImage(image, boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
 	}
 	// Draw the hitbox of the entity
 	drawHitbox(context) {
@@ -453,7 +501,6 @@ if (levelCreation) {
 	keyState["control"] = false
 	keyState["z"] = false
 	undo = 0
-	entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group()}))
 	var initialPos = new CartesianPoint(-1, -1)
 	var creationState = undefined
 	canvas.addEventListener("mousedown", (event) => {
@@ -468,7 +515,6 @@ if (levelCreation) {
 					break
 			}
 		}
-		console.log(initialPos)
 	})
 	canvas.addEventListener("mouseup", (event) => {
 		if (event.button === creationState) {
@@ -535,7 +581,13 @@ if (levelCreation) {
 		levelRenderer()
 	}
 }
-entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 1.0, hitbox: new Rect(50, 50), sprite: "./Player.png"}))
+entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group(
+	new Rect(35, 768),
+	new Rect(1092, 35),
+	new Location(1057, 0, new Rect(35, 768)),
+	new Location(0, 733, new Rect(1092, 35))
+), sprite: "LevelWalls.png"}))
+entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png"}))
 var mousePos = new CartesianPoint(0, 0)
 canvas.addEventListener('mousemove', (event) => {
 	let canvasData = canvas.getBoundingClientRect()
