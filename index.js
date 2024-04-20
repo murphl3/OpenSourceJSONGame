@@ -333,7 +333,11 @@ class Entity {
 		this.scale = scale
 		if (!(hitbox instanceof Hitbox)) { throw new Error("Hitbox Must be a Subclass of Custom Hitbox Class") }
 		this.hitbox = hitbox
-		this.sprite = sprite
+		this.sprite = undefined
+		if (sprite !== undefined) {
+			this.sprite = new Image()
+			this.sprite.src = sprite
+		}
 		// Log the entity for debugging
 		console.log(this)
 	}
@@ -395,10 +399,8 @@ class Entity {
 	// Draw the Entity
 	draw(context) {
 		if (this.position === undefined || this.sprite === undefined) { return }
-		let image = new Image()
-		image.src = this.sprite
 		let boundingBox = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(new BoundingBox)
-		context.drawImage(image, boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
+		context.drawImage(this.sprite, boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
 	}
 	// Draw the hitbox of the entity
 	drawHitbox(context) {
