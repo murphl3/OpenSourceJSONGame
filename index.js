@@ -462,7 +462,7 @@ class Player extends Entity {
 		if (keyState[" "] && this.cooldown === 0 && this.projectileCount < 5) {
 			this.projectileCount += 1
 			this.cooldown = 16
-			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0}, 5 * this.cooldown, this))
+			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0, height: 500}, 5 * this.cooldown, this))
 		}
 
 		if (this.cooldown > 0) {
