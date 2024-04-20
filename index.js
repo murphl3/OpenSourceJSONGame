@@ -412,6 +412,11 @@ class Entity {
 		this.drawHitbox(context)
 		this.draw(context)
 	}
+	// What to do when an entity hits another entity
+	hitBy(other) {
+		/* By Default, Do Nothing */
+		return
+	}
 }
 
 class Player extends Entity {
@@ -422,6 +427,7 @@ class Player extends Entity {
 		this.velocity = new PolarPoint(0, 0)
 		this.cooldown = 0
 		this.projectileCount = 0
+		this.hitpoints = 3
 	}
 	despawnProjectile() {
 		this.projectileCount -= 1
@@ -443,6 +449,7 @@ class Player extends Entity {
 		let prevPos = this.position
 		this.position = this.position.add(this.velocity)
 		let collisions = this.getCollisions()
+		collisions.forEach((entity) => {entity[0].hitBy(this)})
 		if (collisions.some((entity) => { return entity[0].id === "Level" })) {
 			this.position = prevPos
 		}
@@ -453,7 +460,7 @@ class Player extends Entity {
 		if (keyState[" "] && this.cooldown === 0 && this.projectileCount < 5) {
 			this.projectileCount += 1
 			this.cooldown = 16
-			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0}, 5 * this.cooldown))
+			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0}, 5 * this.cooldown, this))
 		}
 
 		if (this.cooldown > 0) {
@@ -462,6 +469,13 @@ class Player extends Entity {
 
 		this.drawHitbox(context)
 		this.draw(context)
+	}
+}
+
+class Enemy extends Entity {
+	constructor(args, hitpoints) {
+		super(args)
+		this.hitpoints = hitpoints
 	}
 }
 
@@ -475,20 +489,25 @@ class LevelElement extends Entity {
 }
 
 class Projectile extends Entity {
-	constructor(args, fuse) {
+	constructor(args, fuse, parent) {
 		args.hitbox = new Circle(10)
 		super(args)
 		this.fuse = fuse
-		this.speed = 5
+		this.velocity = new PolarPoint(5, this.orientation)
+		this.parent = parent
+	}
+	despawn() {
+		this.parent.despawnProjectile()
+		entities.splice(entities.findIndex((entity) => this === entity), 1)
 	}
 	update({canvas, context}) {
 		let collisions = this.getCollisions()
-		if (this.fuse <= 0 || collisions.some((entity) => entity[0].id === "Level")) {
-			entities.splice(entities.findIndex((entity) => {entity === this}), 1)
-			entities.forEach((entity) => {if (entity.id === "Player") { entity.despawnProjectile() }})
+		if (this.fuse < 1 || collisions.some((entity) => entity[0].id === "Level" || entity[0].id === "Enemy")) {
+			collisions.forEach((entity)=> {entity[0].hitBy(this)})
+			this.despawn()
 		}
-		this.fuse -= 1
-		this.position = this.position.add(new PolarPoint(this.speed, this.orientation))
+		this.fuse = this.fuse - 1
+		this.position = this.position.add(this.velocity)
 		this.drawHitbox(context)
 		this.draw(context)
 	}
