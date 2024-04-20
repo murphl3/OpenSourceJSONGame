@@ -322,7 +322,7 @@ class BoundingBox extends Visitor {
 
 class Entity {
 	// A top-level class which is a superclass of almost everything in the game
-	constructor({id, position, orientation, scale, hitbox, sprite}) {
+	constructor({id, position, orientation, scale, hitbox, sprite, height}) {
 		this.id = id
 		if (!(position instanceof Vector)) { throw new Error("Position Must be a Vector") }
 		this.position = position
@@ -338,6 +338,8 @@ class Entity {
 			this.sprite = new Image()
 			this.sprite.src = sprite
 		}
+		if (height !== undefined && typeof(height) !== "number") { throw new Error("Height Must be a Number") }
+		this.height = height
 		// Log the entity for debugging
 		console.log(this)
 	}
@@ -519,6 +521,7 @@ class Projectile extends Entity {
 var entities = new Array()
 var levelCreation = true
 if (levelCreation) {
+	const defaultEntityCount = 3
 	keyState["control"] = false
 	keyState["z"] = false
 	undo = 0
@@ -549,12 +552,12 @@ if (levelCreation) {
 					if (mousePos.getY() < initialPos.getY()) {
 						initialPos = new CartesianPoint(initialPos.getX(), mousePos.getY())
 					}
-					entities.push(new LevelElement({position: initialPos, hitbox: new Rect(width, height)}))
+					entities.push(new LevelElement({position: initialPos, hitbox: new Rect(width, height), height: 999}))
 					creationState = undefined
 					initialPos = new CartesianPoint(-1, -1)
 					break
 				case 2:
-					entities.push(new LevelElement({position: initialPos, hitbox: new Circle(mousePos.subtract(initialPos).getMagnitude())}))
+					entities.push(new LevelElement({position: initialPos, hitbox: new Circle(mousePos.subtract(initialPos).getMagnitude()), height: 999}))
 					creationState = undefined
 					initialPos = new CartesianPoint(-1, -1)
 					break
@@ -595,7 +598,7 @@ if (levelCreation) {
 	}
 	editorUpdate = function() {
 		if (undo > 0) { undo -= 1 }
-		if (keyState["control"] && keyState["z"] && undo === 0 && entities.length > 2) {
+		if (keyState["control"] && keyState["z"] && undo === 0 && entities.length > defaultEntityCount) {
 			entities.splice(-1, 1)
 			undo = 32
 		}
@@ -607,8 +610,8 @@ entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new 
 	new Rect(1092, 35),
 	new Location(1057, 0, new Rect(35, 768)),
 	new Location(0, 733, new Rect(1092, 35))
-), sprite: "LevelWalls.png"}))
-entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png"}))
+), sprite: "LevelWalls.png", height: 1000}))
+entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png", height: 998}))
 var mousePos = new CartesianPoint(0, 0)
 canvas.addEventListener('mousemove', (event) => {
 	let canvasData = canvas.getBoundingClientRect()
@@ -619,8 +622,9 @@ canvas.addEventListener('mousemove', (event) => {
 
 // GAME LOGIC
 function loop() {
+	sortedEntities = entities.toSorted((a, b) => (a.height - b.height))
 	clearCanvas()
-	entities.forEach((entity) => {entity.update({canvas: canvas, context: context})})
+	sortedEntities.forEach((entity) => {entity.update({canvas: canvas, context: context})})
 	if (levelCreation) {
 		editorUpdate()
 	}
