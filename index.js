@@ -557,6 +557,7 @@ class Projectile extends Entity {
 
 // Initialize game content
 var entities = new Array()
+var pause = false
 var levelCreation = true
 if (levelCreation) {
 	const defaultEntityCount = 3
@@ -566,7 +567,7 @@ if (levelCreation) {
 	var initialPos = new CartesianPoint(-1, -1)
 	var creationState = undefined
 	canvas.addEventListener("mousedown", (event) => {
-		if (creationState === undefined) {
+		if (creationState === undefined && !pause) {
 			switch (event.button) {
 				case 0:
 				case 2:
@@ -579,7 +580,7 @@ if (levelCreation) {
 		}
 	})
 	canvas.addEventListener("mouseup", (event) => {
-		if (event.button === creationState) {
+		if (event.button === creationState && !pause) {
 			switch (creationState) {
 				case 0:
 					let width = Math.abs(mousePos.getX() - initialPos.getX())
@@ -659,7 +660,6 @@ canvas.addEventListener('mousemove', (event) => {
 /********************************************************************************************************************************/
 
 // GAME LOGIC
-var pause = false
 pauseCooldown = 0
 var EnemyCooldown = 128
 function loop() {
