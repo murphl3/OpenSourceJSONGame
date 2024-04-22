@@ -527,6 +527,9 @@ class LevelElement extends Entity {
 		args.scale = 1.0
 		super(args)
 	}
+	update({canvas, context}) {
+		this.draw(context)
+	}
 }
 
 class Projectile extends Entity {
