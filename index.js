@@ -560,7 +560,7 @@ class Projectile extends Entity {
 // Initialize game content
 var entities = new Array()
 var pause = false
-var levelCreation = true
+var levelCreation = false
 if (levelCreation) {
 	const defaultEntityCount = 3
 	keyState["control"] = false
