@@ -27,6 +27,7 @@ const initializedKeys = [
 	"d",
 	"arrowright",
 	" ",
+	"escape",
 ]
 canvas.oncontextmenu = function() { return false }
 var keyState = new Object()
@@ -340,8 +341,6 @@ class Entity {
 		}
 		if (height !== undefined && typeof(height) !== "number") { throw new Error("Height Must be a Number") }
 		this.height = height
-		// Log the entity for debugging
-		console.log(this)
 	}
 	// Checks collision
 	collidingWith(other) {
@@ -400,12 +399,14 @@ class Entity {
 	}
 	// Draw the Entity
 	draw(context) {
+		if (context === undefined) { throw new Error("Forgot to include Context") }
 		if (this.position === undefined || this.sprite === undefined) { return }
 		let boundingBox = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(new BoundingBox)
 		context.drawImage(this.sprite, boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
 	}
 	// Draw the hitbox of the entity
 	drawHitbox(context) {
+		if (context === undefined) { throw new Error("Forgot to include Context") }
 		let drawTool = new DrawHitboxes(context)
 		new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(drawTool)
 	}
@@ -433,6 +434,15 @@ class Player extends Entity {
 	}
 	despawnProjectile() {
 		this.projectileCount -= 1
+	}
+	hitBy(other) {
+		switch (other.id) {
+			case "Enemy":
+				this.hitpoints -= 1
+
+			default:
+				break
+		}
 	}
 	update({canvas, context}) {
 		if (keyState["w"] || keyState["arrowup"]) {
@@ -462,22 +472,51 @@ class Player extends Entity {
 		if (keyState[" "] && this.cooldown === 0 && this.projectileCount < 5) {
 			this.projectileCount += 1
 			this.cooldown = 16
-			entities.push(new Projectile({id: "Projectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0, height: 500}, 5 * this.cooldown, this))
+			entities.push(new Projectile({id: "PlayerProjectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0, height: 500}, this))
 		}
 
 		if (this.cooldown > 0) {
 			this.cooldown -= 1
 		}
-
-		this.drawHitbox(context)
 		this.draw(context)
 	}
 }
 
 class Enemy extends Entity {
 	constructor(args, hitpoints) {
+		args.id = "Enemy"
+		args.orientation = Math.PI
+		args.scale = 1.0
+		args.hitbox = new Rect(50, 50)
+		args.height = 500
 		super(args)
+		this.cooldown = 0
 		this.hitpoints = hitpoints
+		this.velocity = new PolarPoint(3, this.orientation)
+	}
+	hitBy(other) {
+		if (other instanceof Projectile && other.id == "PlayerProjectile") {
+			this.hitpoints -= 1
+			if (this.hitpoints < 1) { this.despawn() }
+		}
+	}
+	despawn() { entities.splice(entities.findIndex((entity) => this === entity), 1) }
+	update({canvas, context}) {
+		let prevPos = this.position
+		this.position = this.position.add(this.velocity)
+		let collisions = this.getCollisions()
+		if (this.cooldown > 1) {
+			this.collidingWith.cooldown -= 1
+		}
+		if (this.position.getX() < -50) { this.despawn() }
+		if (this.cooldown <= 0 && collisions.some((entity) => entity.id === "Player")) {
+			collisions[collisions.findIndex((entity) => entity.id === "Player")].hitBy(this)
+			this.hitpoints -= 1
+			if (this.hitpoints < 1) { this.despawn(); return }
+			this.cooldown = 64
+		}
+		this.drawHitbox(context)
+		this.draw(context)
 	}
 }
 
@@ -491,10 +530,9 @@ class LevelElement extends Entity {
 }
 
 class Projectile extends Entity {
-	constructor(args, fuse, parent) {
+	constructor(args, parent) {
 		args.hitbox = new Circle(10)
 		super(args)
-		this.fuse = fuse
 		this.velocity = new PolarPoint(5, this.orientation)
 		this.parent = parent
 	}
@@ -504,7 +542,7 @@ class Projectile extends Entity {
 	}
 	update({canvas, context}) {
 		let collisions = this.getCollisions()
-		if (this.fuse < 1 || collisions.some((entity) => entity[0].id === "Level" || entity[0].id === "Enemy")) {
+		if (collisions.some((entity) => entity[0].id === "Level" || entity[0].id === "Enemy")) {
 			collisions.forEach((entity)=> {entity[0].hitBy(this)})
 			this.despawn()
 		}
@@ -611,7 +649,7 @@ entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new 
 	new Location(1057, 0, new Rect(35, 768)),
 	new Location(0, 733, new Rect(1092, 35))
 ), sprite: "LevelWalls.png", height: 1000}))
-entities.push(new Player({position: new CartesianPoint(50, 50), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png", height: 998}))
+entities.push(new Player({position: new CartesianPoint(50, (canvas.height / 2) - 25), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png", height: 998}))
 var mousePos = new CartesianPoint(0, 0)
 canvas.addEventListener('mousemove', (event) => {
 	let canvasData = canvas.getBoundingClientRect()
@@ -621,12 +659,44 @@ canvas.addEventListener('mousemove', (event) => {
 /********************************************************************************************************************************/
 
 // GAME LOGIC
+var pause = false
+pauseCooldown = 0
+var EnemyCooldown = 128
 function loop() {
-	sortedEntities = entities.toSorted((a, b) => (a.height - b.height))
-	clearCanvas()
-	sortedEntities.forEach((entity) => {entity.update({canvas: canvas, context: context})})
-	if (levelCreation) {
-		editorUpdate()
+	if (pause) {
+		if (pauseCooldown <= 0) {
+			if (keyState["escape"]) {
+				pause = false
+				pauseCooldown = 32
+			}
+		} else {
+			pauseCooldown -= 1
+		}
+	} else {
+		EnemyCooldown -= 1
+		if (EnemyCooldown <= 0) {
+			entities.push(new Enemy({position: new CartesianPoint(canvas.width, (Math.random() * (canvas.height - 105)) + 35)}, Math.floor(Math.random() * 3)))
+			EnemyCooldown = (Math.floor((Math.random() * 32)) + 32)
+		}
+		sortedEntities = entities.toSorted((a, b) => (a.height - b.height))
+		clearCanvas()
+		sortedEntities.forEach((entity) => {entity.update({canvas: canvas, context: context})})
+		if (levelCreation) {
+			editorUpdate()
+		}
+		if (pauseCooldown <= 0) {
+			if (keyState["escape"]) {
+				var prevStyle = [context.fillStyle, context.strokeStyle]
+				context.fillStyle = "rgba(0, 0, 0, 0.5)"
+				context.fillRect(0, 0, canvas.width, canvas.height)
+				context.fillStyle = prevStyle[0]
+				context.strokeStyle = prevStyle[1]
+				pause = true
+				pauseCooldown = 32
+			}
+		} else {
+			pauseCooldown -= 1
+		}
 	}
 	window.requestAnimationFrame(loop)
 }
