@@ -515,7 +515,6 @@ class Enemy extends Entity {
 			if (this.hitpoints < 1) { this.despawn(); return }
 			this.cooldown = 64
 		}
-		this.drawHitbox(context)
 		this.draw(context)
 	}
 }
@@ -678,7 +677,7 @@ function loop() {
 	} else {
 		EnemyCooldown -= 1
 		if (EnemyCooldown <= 0) {
-			entities.push(new Enemy({position: new CartesianPoint(canvas.width, (Math.random() * (canvas.height - 105)) + 35)}, Math.floor(Math.random() * 3)))
+			entities.push(new Enemy({position: new CartesianPoint(canvas.width, (Math.random() * (canvas.height - 105)) + 35), sprite: "./Enemy.png"}, Math.floor(Math.random() * 3)))
 			EnemyCooldown = (Math.floor((Math.random() * 32)) + 32)
 		}
 		sortedEntities = entities.toSorted((a, b) => (a.height - b.height))
