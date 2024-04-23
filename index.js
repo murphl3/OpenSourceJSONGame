@@ -531,6 +531,13 @@ class LevelElement extends Entity {
 	}
 }
 
+class Background extends LevelElement {
+	constructor(args) {
+		super(args)
+		this.id = "Background"
+	}
+}
+
 class Projectile extends Entity {
 	constructor(args, parent) {
 		args.hitbox = new Circle(10)
@@ -646,6 +653,7 @@ if (levelCreation) {
 		levelRenderer()
 	}
 }
+entities.push(new Background({position: new CartesianPoint(0, 0), hitbox: new Rect(canvas.width, canvas.height), sprite: "Background.png", height: 0}))
 entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group(
 	new Rect(35, 768),
 	new Rect(1092, 35),
