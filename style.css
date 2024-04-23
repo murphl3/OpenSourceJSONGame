@@ -4,6 +4,10 @@
     box-sizing: border-box;
 }
 
+#page {
+    background: #5f5f5f;
+}
+
 #gameCanvas {
     border: Spx solid black;
     position: absolute;
