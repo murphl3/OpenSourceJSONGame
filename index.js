@@ -750,6 +750,26 @@ function gameOverScreen() {
 	context.strokeText(text, canvas.width / 2, canvas.height / 2 + 25)
 }
 
+function winScreen() {
+	clearCanvas()
+	entities.forEach((entity) => {if (entity.id === "Background" || entity.id === "Level") {entity.update({canvas: canvas, context: context})}})
+	context.fillStyle = "rgba(0,255,0,0.25)"
+	context.fillRect(0, 0, canvas.width, canvas.height)
+	context.fillStyle = "#ffffff"
+	context.strokeStyle = "#000000"
+	context.font = "64px Sans-Serif"
+	context.textAlign = "center"
+	context.lineWidth = 2
+	let text = "YOW WIN!"
+	context.fillText(text, canvas.width / 2, canvas.height / 2 - 25)
+	context.strokeText(text, canvas.width / 2, canvas.height / 2 - 25)
+	context.font = "25px Sans-Serif"
+	context.lineWidth = 1
+	text = "Reload to Play Again"
+	context.fillText(text, canvas.width / 2, canvas.height / 2 + 25)
+	context.strokeText(text, canvas.width / 2, canvas.height / 2 + 25)
+}
+
 function loop() {
 	if (pause) {
 		if (pauseCooldown <= 0) {
@@ -763,6 +783,7 @@ function loop() {
 	} else {
 		EnemyCooldown -= 1
 		if (entities.some((entity) => entity.id === "Player" && entity.hitpoints === 0)) { window.requestAnimationFrame(gameOverScreen); return }
+		if (points > 99) { window.requestAnimationFrame(winScreen); return }
 		if (EnemyCooldown <= 0) {
 			entities.push(new Enemy({position: new CartesianPoint(canvas.width, (Math.random() * (canvas.height - 105)) + 35), sprite: "./Enemy.png"}, Math.ceil(Math.random() * 3)))
 			EnemyCooldown = (Math.floor((Math.random() * 32)) + 32)
