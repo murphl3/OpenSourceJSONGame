@@ -82,22 +82,13 @@ loop - Function which calls itself each animation frame, and acts as the game lo
 
 Win screen added at 100 points
 
+
 Background and enemy Sprites added
+
+
 index.html added
-	<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE-edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>JavaScript Game</title>
-	<link rel="stylesheet" href="style.css">
-</head>
-<body id="page">
-	<canvas id="gameCanvas"></canvas>
-	<script src='index.js'></script>
-</body>
-</html>
+	Set up structure for web page with canvas element for rendering game	
+
 
 Win Condition and Screen added to index.js
 
