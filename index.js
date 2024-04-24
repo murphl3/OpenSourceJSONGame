@@ -836,6 +836,8 @@ const setup = function() {
 		new Location(0, 733, new Rect(1092, 35))
 	), sprite: "LevelWalls.png", height: 1000}))
 	entities.push(new Player({position: new CartesianPoint(50, (canvas.height / 2) - 25), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png", height: 998}))	
+	pauseCooldown = 0
+	EnemyCooldown = 128
 	points = 0
 	pause = false
 	gameEnd = false
