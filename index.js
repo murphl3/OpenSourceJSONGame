@@ -430,7 +430,10 @@ class Player extends Entity {
 		this.velocity = new PolarPoint(0, 0)
 		this.cooldown = 0
 		this.projectileCount = 0
-		this.hitpoints = 3
+		this.maxHitpoints = 3
+		this.hitpoints = this.maxHitpoints
+		this.defaultImmunity = 64
+		this.immunity = 0
 	}
 	despawnProjectile() {
 		this.projectileCount -= 1
@@ -439,10 +442,32 @@ class Player extends Entity {
 		switch (other.id) {
 			case "Enemy":
 				this.hitpoints -= 1
-
+				break
 			default:
 				break
 		}
+	}
+	draw(context) {
+		if (context === undefined) { throw new Error("Forgot to include Context") }
+		if (this.position === undefined || this.sprite === undefined) { return }
+		let boundingBox = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(new BoundingBox)
+		context.drawImage(this.sprite, boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
+		if (this.immunity > this.defaultImmunity / 2) {
+			context.fillStyle = "rgba(255, 0, 0, 0.5)"
+			context.fillRect(boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
+		}
+		var prevStyle = [context.fillStyle, context.strokeStyle, context.textAlign, context.font]
+		context.textAlign = "center"
+		context.fillStyle = "#ffffff"
+		context.strokeStyle = "#000000"
+		context.font = "20px Sans-Serif"
+		let text = this.hitpoints + "/" + this.maxHitpoints
+		context.fillText(text, boundingBox.hitbox.width / 2 + boundingBox.position.getX(), boundingBox.position.getY() - 5)
+		context.strokeText(text, boundingBox.hitbox.width / 2 + boundingBox.position.getX(), boundingBox.position.getY() - 5)
+		context.fillStyle = prevStyle[0]
+		context.strokeStyle = prevStyle[1]
+		context.textAlign = prevStyle[2]
+		context.font = prevStyle[3]
 	}
 	update({canvas, context}) {
 		if (keyState["w"] || keyState["arrowup"]) {
@@ -462,8 +487,14 @@ class Player extends Entity {
 		this.position = this.position.add(this.velocity)
 		let collisions = this.getCollisions()
 		collisions.forEach((entity) => {entity[0].hitBy(this)})
-		if (collisions.some((entity) => { return entity[0].id === "Level" })) {
+		console.log(collisions)
+		if (collisions.some((entity) => entity[0].id === "Level")) {
 			this.position = prevPos
+		}
+		if (this.immunity > 0) { this.immunity -= 1 }
+		if (this.immunity <= 0 && collisions.some((entity) =>  entity[0].id == "Enemy")) {
+			this.immunity = this.defaultImmunity
+			this.hitpoints -= 1
 		}
 		this.velocity = new PolarPoint(0, 0)
 		let center = new CartesianPoint(this.position.getX() + 25, this.position.getY() + 25)
@@ -493,10 +524,13 @@ class Enemy extends Entity {
 		this.cooldown = 0
 		this.hitpoints = hitpoints
 		this.velocity = new PolarPoint(3, this.orientation)
+		this.immunity = 0
+		this.defaultImmunity = 6
 	}
 	hitBy(other) {
-		if (other instanceof Projectile && other.id == "PlayerProjectile") {
+		if (this.immunity <= 0 && other instanceof Projectile && other.id == "PlayerProjectile") {
 			this.hitpoints -= 1
+			this.immunity = this.defaultImmunity
 			if (this.hitpoints < 1) {
 					this.despawn()
 					points += 1
@@ -504,19 +538,39 @@ class Enemy extends Entity {
 		}
 	}
 	despawn() { entities.splice(entities.findIndex((entity) => this === entity), 1) }
+	draw(context) {
+		if (context === undefined) { throw new Error("Forgot to include Context") }
+		if (this.position === undefined || this.sprite === undefined) { return }
+		let boundingBox = new Location(this.position.getX(), this.position.getY(), this.hitbox).accept(new BoundingBox)
+		context.drawImage(this.sprite, boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
+		if (this.immunity > 0) {
+			context.fillStyle = "rgba(255, 0, 0, 0.5)"
+			context.fillRect(boundingBox.position.getX(), boundingBox.position.getY(), boundingBox.hitbox.width, boundingBox.hitbox.height)
+		}
+		var prevStyle = [context.fillStyle, context.strokeStyle, context.textAlign, context.font]
+		context.textAlign = "center"
+		context.fillStyle = "#ffffff"
+		context.strokeStyle = "#000000"
+		context.font = "20px Sans-Serif"
+		context.fillText(this.hitpoints, boundingBox.hitbox.width / 2 + boundingBox.position.getX(), boundingBox.position.getY() - 5)
+		context.strokeText(this.hitpoints, boundingBox.hitbox.width / 2 + boundingBox.position.getX(), boundingBox.position.getY() - 5)
+		context.fillStyle = prevStyle[0]
+		context.strokeStyle = prevStyle[1]
+		context.textAlign = prevStyle[2]
+		context.font = prevStyle[3]
+	}
 	update({canvas, context}) {
 		let prevPos = this.position
 		this.position = this.position.add(this.velocity)
 		let collisions = this.getCollisions()
-		if (this.cooldown > 1) {
-			this.collidingWith.cooldown -= 1
-		}
+		if (this.immunity > 0) {
+			this.immunity -= 1
+		} 
 		if (this.position.getX() < -50) { this.despawn() }
-		if (this.cooldown <= 0 && collisions.some((entity) => entity.id === "Player")) {
-			collisions[collisions.findIndex((entity) => entity.id === "Player")].hitBy(this)
+		if (this.immunity <= 0 && collisions.some((entity) => entity[0].id === "Player")) {
 			this.hitpoints -= 1
-			if (this.hitpoints < 1) { this.despawn(); return }
-			this.cooldown = 64
+			if (this.hitpoints < 1) { this.despawn(); points += 1; return }
+			this.immunity = this.defaultImmunity * 5
 		}
 		this.draw(context)
 	}
@@ -689,7 +743,7 @@ function loop() {
 	} else {
 		EnemyCooldown -= 1
 		if (EnemyCooldown <= 0) {
-			entities.push(new Enemy({position: new CartesianPoint(canvas.width, (Math.random() * (canvas.height - 105)) + 35), sprite: "./Enemy.png"}, Math.floor(Math.random() * 3)))
+			entities.push(new Enemy({position: new CartesianPoint(canvas.width, (Math.random() * (canvas.height - 105)) + 35), sprite: "./Enemy.png"}, Math.ceil(Math.random() * 3)))
 			EnemyCooldown = (Math.floor((Math.random() * 32)) + 32)
 		}
 		sortedEntities = entities.toSorted((a, b) => (a.height - b.height))
