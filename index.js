@@ -502,7 +502,7 @@ class Player extends Entity {
 		if (keyState[" "] && this.cooldown === 0 && this.projectileCount < 5) {
 			this.projectileCount += 1
 			this.cooldown = 16
-			entities.push(new Projectile({id: "PlayerProjectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0, height: 500}, this))
+			entities.push(new Projectile({id: "PlayerProjectile", position: center.toCartesianPoint(), orientation: this.orientation, scale: 1.0, height: 500, sprite: "./Projectile.png"}, this))
 		}
 
 		if (this.cooldown > 0) {
@@ -613,7 +613,6 @@ class Projectile extends Entity {
 		}
 		this.fuse = this.fuse - 1
 		this.position = this.position.add(this.velocity)
-		this.drawHitbox(context)
 		this.draw(context)
 	}
 }
