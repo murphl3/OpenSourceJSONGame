@@ -759,7 +759,7 @@ function winScreen() {
 	context.font = "64px Sans-Serif"
 	context.textAlign = "center"
 	context.lineWidth = 2
-	let text = "YOW WIN!"
+	let text = "YOU WIN!"
 	context.fillText(text, canvas.width / 2, canvas.height / 2 - 25)
 	context.strokeText(text, canvas.width / 2, canvas.height / 2 - 25)
 	context.font = "25px Sans-Serif"
