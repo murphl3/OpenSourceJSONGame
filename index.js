@@ -497,7 +497,10 @@ class Enemy extends Entity {
 	hitBy(other) {
 		if (other instanceof Projectile && other.id == "PlayerProjectile") {
 			this.hitpoints -= 1
-			if (this.hitpoints < 1) { this.despawn() }
+			if (this.hitpoints < 1) {
+					this.despawn()
+					points += 1
+				}
 		}
 	}
 	despawn() { entities.splice(entities.findIndex((entity) => this === entity), 1) }
@@ -566,6 +569,7 @@ class Projectile extends Entity {
 
 // Initialize game content
 var entities = new Array()
+var points = 0
 var pause = false
 var levelCreation = false
 if (levelCreation) {
@@ -696,11 +700,19 @@ function loop() {
 		}
 		if (pauseCooldown <= 0) {
 			if (keyState["escape"]) {
-				var prevStyle = [context.fillStyle, context.strokeStyle]
+				var prevStyle = [context.fillStyle, context.strokeStyle, context.textAlign, context.font]
 				context.fillStyle = "rgba(0, 0, 0, 0.5)"
 				context.fillRect(0, 0, canvas.width, canvas.height)
+				context.fillStyle = "#ffffff"
+				context.font = "64px Sans-Serif"
+				context.textAlign = "center"
+				context.fillText("PAUSED", canvas.width / 2, (canvas.height / 2) - 20)
+				context.font = "16px Sans-Serif"
+				context.fillText("Points: " + points, canvas.width / 2, (canvas.height / 2) + 20)
 				context.fillStyle = prevStyle[0]
 				context.strokeStyle = prevStyle[1]
+				context.textAlign = prevStyle[2]
+				context.font = prevStyle[3]
 				pause = true
 				pauseCooldown = 32
 			}
