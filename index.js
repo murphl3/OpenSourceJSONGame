@@ -28,6 +28,7 @@ const initializedKeys = [
 	"arrowright",
 	" ",
 	"escape",
+	"r",
 ]
 canvas.oncontextmenu = function() { return false }
 var keyState = new Object()
@@ -36,6 +37,11 @@ for (var i = 0; i < initializedKeys.length; i++) {
 }
 window.addEventListener('keydown', (event) => {
 	keyState[event.key.toLowerCase()] = true
+	if (gameEnd && keyState["r"]) {
+		setup()
+		loop()
+		return
+	}
 })
 window.addEventListener('keyup', (event) => {
 	keyState[event.key.toLowerCase()] = false
@@ -709,14 +715,6 @@ if (levelCreation) {
 		levelRenderer()
 	}
 }
-entities.push(new Background({position: new CartesianPoint(0, 0), hitbox: new Rect(canvas.width, canvas.height), sprite: "Background.png", height: 0}))
-entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group(
-	new Rect(35, 768),
-	new Rect(1092, 35),
-	new Location(1057, 0, new Rect(35, 768)),
-	new Location(0, 733, new Rect(1092, 35))
-), sprite: "LevelWalls.png", height: 1000}))
-entities.push(new Player({position: new CartesianPoint(50, (canvas.height / 2) - 25), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png", height: 998}))
 var mousePos = new CartesianPoint(0, 0)
 canvas.addEventListener('mousemove', (event) => {
 	let canvasData = canvas.getBoundingClientRect()
@@ -726,11 +724,13 @@ canvas.addEventListener('mousemove', (event) => {
 /********************************************************************************************************************************/
 
 // GAME LOGIC
-pauseCooldown = 0
+var pauseCooldown = 0
 var EnemyCooldown = 128
+var gameEnd = false
 
 function gameOverScreen() {
 	clearCanvas()
+	gameEnd = true
 	entities.forEach((entity) => {if (entity.id === "Background" || entity.id === "Level") {entity.update({canvas: canvas, context: context})}})
 	context.fillStyle = "rgba(255,0,0,0.25)"
 	context.fillRect(0, 0, canvas.width, canvas.height)
@@ -744,13 +744,14 @@ function gameOverScreen() {
 	context.strokeText(text, canvas.width / 2, canvas.height / 2 - 25)
 	context.font = "25px Sans-Serif"
 	context.lineWidth = 1
-	text = "Reload to Play Again"
+	text = "Reload or Press R to Play Again"
 	context.fillText(text, canvas.width / 2, canvas.height / 2 + 25)
 	context.strokeText(text, canvas.width / 2, canvas.height / 2 + 25)
 }
 
 function winScreen() {
 	clearCanvas()
+	gameEnd = true
 	entities.forEach((entity) => {if (entity.id === "Background" || entity.id === "Level") {entity.update({canvas: canvas, context: context})}})
 	context.fillStyle = "rgba(0,255,0,0.25)"
 	context.fillRect(0, 0, canvas.width, canvas.height)
@@ -764,7 +765,7 @@ function winScreen() {
 	context.strokeText(text, canvas.width / 2, canvas.height / 2 - 25)
 	context.font = "25px Sans-Serif"
 	context.lineWidth = 1
-	text = "Reload to Play Again"
+	text = "Reload or Press R to Play Again"
 	context.fillText(text, canvas.width / 2, canvas.height / 2 + 25)
 	context.strokeText(text, canvas.width / 2, canvas.height / 2 + 25)
 }
@@ -775,6 +776,11 @@ function loop() {
 			if (keyState["escape"]) {
 				pause = false
 				pauseCooldown = 32
+			}
+			if (keyState["r"]) {
+				setup()
+				loop()
+				return
 			}
 		} else {
 			pauseCooldown -= 1
@@ -820,5 +826,21 @@ function loop() {
 
 /********************************************************************************************************************************/
 
+const setup = function() {
+	entities.splice(0, entities.length)
+	entities.push(new Background({position: new CartesianPoint(0, 0), hitbox: new Rect(canvas.width, canvas.height), sprite: "Background.png", height: 0}))
+	entities.push(new LevelElement({position: new CartesianPoint(0, 0), hitbox: new Group(
+		new Rect(35, 768),
+		new Rect(1092, 35),
+		new Location(1057, 0, new Rect(35, 768)),
+		new Location(0, 733, new Rect(1092, 35))
+	), sprite: "LevelWalls.png", height: 1000}))
+	entities.push(new Player({position: new CartesianPoint(50, (canvas.height / 2) - 25), orientation: 0.0, scale: 0.5, hitbox: new Rect(50, 50), sprite: "./Player.png", height: 998}))	
+	points = 0
+	pause = false
+	gameEnd = false
+}
+
 // START GAME LOOP
+setup()
 loop()
