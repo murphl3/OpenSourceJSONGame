@@ -1,5 +1,11 @@
 # OpenSourceJavascriptGame
 
+This is a basic enemy shooter with tank controls for WASD and spacebar to shoot and mouse to aim. We had hoped to aim higher in this project by making something similar to an open world adventure RPG with multiple endings, but were bogged down with 
+time constraints and resource management. Below are all of the functions and class calls that outline each files' basic functionality, as well as documentation
+
+
+
+
 clearCanvas() - Function to redraw a black screen
 
 
