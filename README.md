@@ -4,6 +4,15 @@ This is a basic enemy shooter with tank controls for WASD and spacebar to shoot 
 time constraints and resource management. Below are all of the functions and class calls that outline each files' basic functionality, as well as documentation
 
 
+Code of Conduct:
+Contributors refers to members of the community surrounding this project, as well as those who have access to the repository.
+Contributors, when contributing to this project, shall be respectful and open to each other's ideas.
+This means that hurtful language should be kept to a minimum, and conversations should not be antagonistic.
+This also means that pull requests, comments, and other places where written language comes up should also be respectful and avoid antagonism.
+
+Mission Statement:
+This project was designed to build a game, and the game engine that goes with it, minimizing the number of files necessary. We have included an HTML file, a CSS file, a Javascript file, and image files.
+Our engine should be effective, allowing for relative ease of use while remaining robust enough to be versatile, despite being small, and our game should be intuitive.
 
 
 clearCanvas() - Function to redraw a black screen
@@ -99,3 +108,13 @@ index.html added
 Win Condition and Screen added to index.js
 
 style.css - Modified Page Color to a gray
+
+
+
+Copyright 2024 Eamon Jouett, Surya Pratap, & Liam Murphy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
